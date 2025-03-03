@@ -1,0 +1,149 @@
+[tool.briefcase]
+project_name = "BitcoinZ Wallet"
+bundle = "com.btcz"
+version = "1.0.0"
+url = "https://getbtcz.com"
+license.file = "LICENSE"
+author = "BTCZCommunity"
+author_email = "None"
+
+[tool.briefcase.app.btczwallet]
+formal_name = "BTCZWallet"
+description = """BitcoinZ Full Node Wallet GUI is user-friendly cryptocurrency wallet designed for storing and managing BitcoinZ (BTCZ) securely. This full node wallet allows users to interact directly with the BitcoinZ blockchain, giving them full control over their funds, while ensuring privacy and decentralization. With its Graphical User Interface (GUI), this wallet provides an intuitive experience for both new and experienced users. It enables you to securely send and receive BitcoinZ transactions, view your wallet’s transaction history, and monitor the current blockchain status, all through an easy-to-use interface.
+"""
+long_description = """BitcoinZ Full Node Wallet GUI is user-friendly cryptocurrency wallet designed for storing and managing BitcoinZ (BTCZ) securely. This full node wallet allows users to interact directly with the BitcoinZ blockchain, giving them full control over their funds, while ensuring privacy and decentralization. With its Graphical User Interface (GUI), this wallet provides an intuitive experience for both new and experienced users. It enables you to securely send and receive BitcoinZ transactions, view your wallet’s transaction history, and monitor the current blockchain status, all through an easy-to-use interface.
+"""
+icon = "btczwallet/images/BitcoinZ"
+sources = [
+    "btczwallet",
+]
+test_sources = [
+    "tests",
+]
+
+requires = [
+]
+test_requires = [
+    "pytest",
+]
+
+[tool.briefcase.app.btczwallet.linux]
+requires = [
+    "toga-gtk==0.4.7",
+    "aiohttp==3.11.11",
+    "py7zr==0.22.0",
+    "qrcode==8.0",
+    "pillow==11.1.0",
+    "pandas==2.2.3",
+    "requests==2.32.3"
+]
+
+[tool.briefcase.app.btczwallet.linux.system.debian]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "libcairo2-dev",
+    # Needed to compile PyGObject wheel
+    "libgirepository1.0-dev",
+]
+
+system_runtime_requires = [
+    # Needed to provide GTK and its GI bindings
+    "gir1.2-gtk-3.0",
+    "libgirepository-1.0-1",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra-gtk3-module",
+    # Needed to provide WebKit2 at runtime
+    # Note: Debian 11 and Ubuntu 20.04 require gir1.2-webkit2-4.0 instead
+    # "gir1.2-webkit2-4.1",
+]
+
+[tool.briefcase.app.btczwallet.linux.system.rhel]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo-gobject-devel",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection-devel",
+]
+
+system_runtime_requires = [
+    # Needed to support Python bindings to GTK
+    "gobject-introspection",
+    # Needed to provide GTK
+    "gtk3",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra-gtk3",
+    # Needed to provide WebKit2 at runtime
+    # "webkit2gtk3",
+]
+
+[tool.briefcase.app.btczwallet.linux.system.suse]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo-devel",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection-devel",
+]
+
+system_runtime_requires = [
+    # Needed to provide GTK
+    "gtk3",
+    # Needed to support Python bindings to GTK
+    "gobject-introspection", "typelib(Gtk) = 3.0",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra-gtk3-module",
+    # Needed to provide WebKit2 at runtime
+    # "libwebkit2gtk3", "typelib(WebKit2)",
+]
+
+[tool.briefcase.app.btczwallet.linux.system.arch]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection",
+    # Runtime dependencies that need to exist so that the
+    # Arch package passes final validation.
+    # Needed to provide GTK
+    "gtk3",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra",
+    # Needed to provide WebKit2
+    # "webkit2gtk",
+]
+
+system_runtime_requires = [
+    # Needed to provide GTK
+    "gtk3",
+    # Needed to provide PyGObject bindings
+    "gobject-introspection-runtime",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra",
+    # Needed to provide WebKit2 at runtime
+    # "webkit2gtk",
+]
+
+[tool.briefcase.app.btczwallet.linux.appimage]
+manylinux = "manylinux_2_28"
+
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo-gobject-devel",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection-devel",
+    # Needed to provide GTK
+    "gtk3-devel",
+    # Dependencies that GTK looks for at runtime, that need to be
+    # in the build environment to be picked up by linuxdeploy
+    "libcanberra-gtk3",
+    "PackageKit-gtk3-module",
+    "gvfs-client",
+]
+
+linuxdeploy_plugins = [
+    "DEPLOY_GTK_VERSION=3 gtk",
+]
+
+[tool.briefcase.app.btczwallet.linux.flatpak]
+flatpak_runtime = "org.gnome.Platform"
+flatpak_runtime_version = "47"
+flatpak_sdk = "org.gnome.Sdk"
