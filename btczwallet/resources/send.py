@@ -139,7 +139,7 @@ class Send(Box):
                 background_color = rgb(230,230,230),
                 font_weight = BOLD,
                 font_size = 11,
-                padding = (0,20,0,0)
+                padding_left = 20
             ),
             on_change=self.many_option_on_change
         )
@@ -149,7 +149,7 @@ class Send(Box):
                 direction = ROW,
                 background_color = rgb(230,230,230),
                 padding=(5,5,0,5),
-                height = 30,
+                height = 35,
                 alignment = CENTER
             )
         )
@@ -158,7 +158,7 @@ class Send(Box):
                 direction = COLUMN,
                 background_color = rgb(230,230,230),
                 padding=(5,5,0,5),
-                height = 30,
+                height = 35,
                 alignment = CENTER
             )
         )
@@ -276,7 +276,7 @@ class Send(Box):
             text="Split",
             value=True,
             style=Pack(
-                color = YELLOW,
+                color = BLACK,
                 background_color = rgb(230,230,230),
                 font_weight = BOLD,
                 font_size = 10
@@ -391,7 +391,8 @@ class Send(Box):
                 text_align= LEFT,
                 background_color = rgb(230,230,230),
                 font_weight = BOLD,
-                font_size = 11
+                font_size = 11,
+                padding_left = 5
             )
         )
 
@@ -419,7 +420,8 @@ class Send(Box):
                 font_size = 12,
                 width = 120,
                 padding = (10,10,0,0)
-            )
+            ),
+            on_press = self.send_button_click
         )
 
         self.confirmation_box = Box(
@@ -647,18 +649,24 @@ class Send(Box):
     def split_option_on_change(self, switch):
         if switch.value is True:
             self.each_option.value = False
-            self.each_option.style.color = GRAY
+            self.split_option.style.color = BLACK
         else:
-            self.each_option.value = True
-            self.each_option.style.color = YELLOW
+            if self.each_option.value is True:
+                self.split_option.value = False
+                self.split_option.style.color = GRAY
+            else:
+                self.split_option.value = True
 
     def each_option_on_change(self, switch):
         if switch.value is True:
             self.split_option.value = False
-            self.split_option.style.color = GRAY
+            self.each_option.style.color = BLACK
         else:
-            self.split_option.value = True
-            self.split_option.style.color = YELLOW
+            if self.split_option.value is True:
+                self.each_option.value = False
+                self.each_option.style.color = GRAY
+            else:
+                self.each_option.value = True
 
 
     async def clear_inputs(self):
@@ -749,7 +757,7 @@ class Send(Box):
             self.fee_input.value = ""
 
 
-    def send_button_click(self, sender, event):
+    def send_button_click(self, button):
         selected_address = self.address_selection.value.select_address if self.address_selection.value else None
         if self.many_option.value is True:
             destination_address = self.destination_input_many.value
@@ -951,6 +959,7 @@ class Send(Box):
 
     
     def disable_send(self):
+        self.send_button.enabled = False
         if self.many_option.value is True:
             self.destination_input_many.readonly = True
         elif self.single_option.value is True:
@@ -960,6 +969,7 @@ class Send(Box):
 
 
     def enable_send(self):
+        self.send_button.enabled = True
         if self.many_option.value is True:
             self.destination_input_many.readonly = False
         elif self.single_option.value is True:

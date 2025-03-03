@@ -43,7 +43,6 @@ class BTCZSetup(Box):
                 font_size = 10,
                 font_weight = BOLD,
                 text_align = CENTER,
-                alignment = CENTER,
                 padding_top = 5,
                 flex = 1
             )
