@@ -6,6 +6,8 @@ from toga.colors import GRAY
 from toga.style.pack import Pack
 from toga.constants import RIGHT, BOLD, COLUMN, ROW
 
+from .resources import Utils
+
 class BitcoinZGUI(Window):
     def __init__(self):
         super().__init__(
@@ -13,6 +15,8 @@ class BitcoinZGUI(Window):
             resizable=False,
             minimizable = False
         )
+
+        self.utils = Utils(self.app)
 
         self.title = "BitcoinZ Wallet"
         position_center = self.utils.windows_screen_center(self.size)
