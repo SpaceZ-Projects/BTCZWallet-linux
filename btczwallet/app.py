@@ -6,7 +6,7 @@ from toga.colors import GRAY
 from toga.style.pack import Pack
 from toga.constants import RIGHT, BOLD, COLUMN, ROW
 
-from .resources import Utils, BTCZSetup
+from .resources import BTCZSetup, Utils
 
 class BitcoinZGUI(Window):
     def __init__(self):
@@ -56,7 +56,10 @@ class BitcoinZGUI(Window):
                 flex = 1
             )
         )
-        self.startup = BTCZSetup(self.app, self)
+        self.startup = BTCZSetup(
+            self.app,
+            self
+        )
         self.startup_panel.add(
             self.bitcoinz_logo,
             self.version_box,

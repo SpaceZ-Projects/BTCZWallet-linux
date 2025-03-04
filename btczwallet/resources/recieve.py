@@ -93,7 +93,7 @@ class Recieve(Box):
             style=Pack(
                 flex = 1,
                 color = BLACK,
-                alignment = CENTER
+                font_weight = BOLD
             ),
             on_select=self.get_address_balance
         )
@@ -127,7 +127,7 @@ class Recieve(Box):
             style=Pack(
                 direction = COLUMN,
                 height=35,
-                padding = (10,50,0,50)
+                padding_top = 10
             )
         )
 
@@ -149,16 +149,19 @@ class Recieve(Box):
             icon="images/copy",
             on_press=self.copy_address_clipboard
         )
+        self.copy_address._impl.native.set_tooltip_text("Copy the selected address")
 
         self.copy_key = Button(
             icon="images/key.png",
             on_press=self.copy_key_clipboard
         )
+        self.copy_key._impl.native.set_tooltip_text("Copy the key of selected address")
 
         self.explorer_address = Button(
             icon="images/explorer",
             on_press=self.open_address_explorer
         )
+        self.explorer_address._impl.native.set_tooltip_text("Open the selected in explorer")
 
         self.address_panel = Box(
             style=Pack(

@@ -9,7 +9,7 @@ from toga.constants import (
     COLUMN, ROW, TOP, LEFT, BOLD, RIGHT,
     CENTER
 )
-from toga.colors import GRAY, BLACK
+from toga.colors import GRAY, BLACK, rgb
 
 from .utils import Utils
 from .client import Client
@@ -49,6 +49,7 @@ class Home(Box):
                 direction = ROW,
                 alignment = TOP,
                 height = 45,
+                background_color = rgb(230,230,230),
                 padding = (5,5,0,5)
             )
         )

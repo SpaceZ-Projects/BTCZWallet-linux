@@ -2,7 +2,7 @@
 import asyncio
 
 from toga import (
-    Window, Box, Button
+    MainWindow, Box, Button
 )
 from toga.style.pack import Pack
 from toga.colors import WHITE, YELLOW, BLACK, GRAY
@@ -14,11 +14,13 @@ from .client import Client
 from .utils import Utils
 from .wallet import Wallet
 from .home import Home
+from .txs import Transactions
 from .recieve import Recieve
 from .send import Send
 from .status import AppStatusBar
+from .toolbar import AppToolbar
 
-class Menu(Window):
+class Menu(MainWindow):
     def __init__(self):
         super().__init__()
 
@@ -60,6 +62,7 @@ class Menu(Window):
         )
 
         self.home_page = Home(self.app)
+        self.transactions_page = Transactions(self.app, self)
         self.recieve_page = Recieve(self.app, self)
         self.send_page = Send(self.app, self)
 
@@ -71,7 +74,13 @@ class Menu(Window):
         )
 
         self.content = self.main_box
+        
+        self.insert_toolbar()
 
+    def insert_toolbar(self):
+        self.app.commands.clear()
+        self.apptoolbar = AppToolbar(self.app)
+        self.apptoolbar.exit_cmd.action = self.on_close_menu
         self.insert_menu_buttons()
 
     def insert_menu_buttons(self):
@@ -162,6 +171,7 @@ class Menu(Window):
     async def set_default_page(self, widget):
         await asyncio.sleep(0.5)
         self.home_button_click(None)
+        self.app.add_background_task(self.transactions_page.update_transactions)
 
 
     def home_button_click(self, button):
@@ -180,6 +190,8 @@ class Menu(Window):
         self.transactions_button.style.color = BLACK
         self.transactions_button.style.background_color = YELLOW
         self.transactions_button.on_press = None
+        self.pages.add(self.transactions_page)
+        self.app.add_background_task(self.transactions_page.insert_widgets)
 
 
     def recieve_button_click(self, button):
@@ -228,6 +240,7 @@ class Menu(Window):
 
         elif self.transactions_button_toggle:
             self.transactions_button_toggle = None
+            self.pages.remove(self.transactions_page)
             self.transactions_button.style.color = GRAY
             self.transactions_button.style.background_color = WHITE
             self.transactions_button.on_press = self.transactions_button_click

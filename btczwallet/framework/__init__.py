@@ -1,1 +1,1 @@
-from .objectz import ClipBoard, StatusBar
+from .objectz import Gtk, ClipBoard, StatusBar
