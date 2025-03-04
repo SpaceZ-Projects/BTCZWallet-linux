@@ -7,10 +7,11 @@ from toga import (
     ImageView, Window, Switch, MultilineTextInput,
     Button
 )
+from ..framework import Gtk
+
 from toga.style.pack import Pack
 from toga.constants import (
-    COLUMN, ROW, TOP, BOLD, CENTER,
-    LEFT, VISIBLE, HIDDEN
+    COLUMN, ROW, TOP, BOLD, CENTER, LEFT
 )
 from toga.colors import (
     rgb, GRAY, WHITE, YELLOW, BLACK, RED
@@ -103,12 +104,11 @@ class Send(Box):
             text="0.00000000",
             style=Pack(
                 color = GRAY,
-                background_color = rgb(30,33,36),
+                background_color = rgb(230,230,230),
                 font_weight = BOLD,
-                font_size = 12,
+                font_size = 11,
                 text_align = CENTER,
-                flex = 1,
-                padding_top = 12
+                padding_right = 80
             )
         )
 
@@ -131,6 +131,7 @@ class Send(Box):
             ),
             on_change=self.single_option_on_change
         )
+        self.single_option._impl.native.set_tooltip_text("Send to single address")
 
         self.many_option = Switch(
             text="Many",
@@ -143,6 +144,7 @@ class Send(Box):
             ),
             on_change=self.many_option_on_change
         )
+        self.many_option._impl.native.set_tooltip_text("Send to many addresses")
 
         self.send_options_switch = Box(
             style=Pack(
@@ -188,6 +190,12 @@ class Send(Box):
             ),
             on_change=self.is_valid_address
         )
+        self.destination_input_single._impl.native.connect("button-press-event", self.destination_input_context_event)
+        self.destination_input_context_menu = Gtk.Menu()
+        send_to_message_item = Gtk.MenuItem(label="Send to messages address")
+        send_to_message_item.connect("activate", self.set_destination_messages_address)
+        self.destination_input_context_menu.append(send_to_message_item)
+        self.destination_input_context_menu.show_all()
 
         self.destination_input_many = MultilineTextInput(
             placeholder="addresses list",
@@ -257,6 +265,21 @@ class Send(Box):
             ],
             on_change=self.verify_balance
         )
+        self.amount_input._impl.native.connect("button-press-event", self.amount_input_context_event)
+        self.amount_input_context_menu = Gtk.Menu()
+        percentage_25_item = Gtk.MenuItem(label="%25 amount")
+        percentage_25_item.connect("activate", self.set_25_amount)
+        percentage_50_item = Gtk.MenuItem(label="%50 amount")
+        percentage_50_item.connect("activate", self.set_50_amount)
+        percentage_75_item = Gtk.MenuItem(label="%75 amount")
+        percentage_75_item.connect("activate", self.set_75_amount)
+        max_amount_item = Gtk.MenuItem(label="Max amount")
+        max_amount_item.connect("activate", self.set_max_amount)
+        self.amount_input_context_menu.append(percentage_25_item)
+        self.amount_input_context_menu.append(percentage_50_item)
+        self.amount_input_context_menu.append(percentage_75_item)
+        self.amount_input_context_menu.append(max_amount_item)
+        self.amount_input_context_menu.show_all()
 
         self.check_amount_label = Label(
             text="",
@@ -283,6 +306,7 @@ class Send(Box):
             ),
             on_change=self.split_option_on_change
         )
+        self.split_option._impl.native.set_tooltip_text("Split the total amount equally across all addresses")
 
         self.each_option = Switch(
             text="Each",
@@ -295,6 +319,7 @@ class Send(Box):
             ),
             on_change=self.each_option_on_change
         )
+        self.each_option._impl.native.set_tooltip_text("Set a specific amount for each address")
 
 
         self.amount_options_switch = Box(
@@ -351,6 +376,19 @@ class Send(Box):
                 self.is_digit
             ]
         )
+        self.fee_input._impl.native.connect("button-press-event", self.fee_input_context_event)
+        self.fee_input_context_menu = Gtk.Menu()
+        slow_item = Gtk.MenuItem(label="Slow")
+        slow_item.connect("activate", self.set_slow_fee)
+        normal_item = Gtk.MenuItem(label="Normal")
+        normal_item.connect("activate", self.set_normal_fee)
+        fast_item = Gtk.MenuItem(label="Fast")
+        fast_item.connect("activate", self.set_fast_fee)
+        self.fee_input_context_menu.append(slow_item)
+        self.fee_input_context_menu.append(normal_item)
+        self.fee_input_context_menu.append(fast_item)
+        self.fee_input_context_menu.show_all()
+
         self.empty_box = Box(
             style=Pack(
                 background_color = rgb(230,230,230),
@@ -445,7 +483,6 @@ class Send(Box):
                 self.send_options_box,
                 self.destination_box,
                 self.amount_box,
-                self.fees_box,
                 self.separator_box,
                 self.confirmation_box
             )
@@ -461,6 +498,7 @@ class Send(Box):
                 self.send_options_switch
             )
             self.send_options_switch.add(
+                self.address_balance,
                 self.single_option,
                 self.many_option
             )
@@ -501,6 +539,118 @@ class Send(Box):
             )
             self.send_toggle = True
             self.transparent_button_click(None)
+
+
+    def destination_input_context_event(self, widget, event):
+        if event.button == 3:
+            self.destination_input_context_menu.popup_at_pointer(event)
+            return True
+        return False
+    
+
+    def amount_input_context_event(self, widget, event):
+        if event.button == 3:
+            self.amount_input_context_menu.popup_at_pointer(event)
+            return True
+        return False
+    
+    def fee_input_context_event(self, widget, event):
+        if event.button == 3:
+            self.fee_input_context_menu.popup_at_pointer(event)
+            return True
+        return False
+    
+
+    def set_destination_messages_address(self, context):
+        selected_address = self.address_selection.value.select_address
+        if selected_address == "Main Account":
+            self.main.error_dialog(
+                title="Error",
+                message="You can't send amount from Main Account to messages (z) address."
+            )
+            return
+        address = self.storage.get_identity("address")
+        if address:
+            value = address[0]
+        else:
+            value = "You don't have messages address yet !"
+        self.destination_input_single.value = value
+
+
+    def set_25_amount(self, context):
+        if self.address_selection.value.select_address:
+            selected_address = self.address_selection.value.select_address
+            balance = self.address_balance.text
+            if selected_address == "Main Account":
+                if float(balance) > 0.0002:
+                    balance_after_fee = float(balance) - 0.0001
+                    amount = balance_after_fee * 0.25
+                    self.amount_input.value = f"{amount:.8f}"
+            else:
+                if float(balance) > 0:
+                    fee = self.fee_input.value
+                    balance_after_fee = float(balance) - float(fee)
+                    amount = balance_after_fee * 0.25
+                    self.amount_input.value = f"{amount:.8f}"
+
+
+    def set_50_amount(self, context):
+        if self.address_selection.value.select_address:
+            selected_address = self.address_selection.value.select_address
+            balance = self.address_balance.text
+            if selected_address == "Main Account":
+                if float(balance) > 0.0002:
+                    balance_after_fee = float(balance) - 0.0001
+                    amount = balance_after_fee * 0.50
+                    self.amount_input.value = f"{amount:.8f}"
+            else:
+                if float(balance) > 0:
+                    fee = self.fee_input.value
+                    balance_after_fee = float(balance) - float(fee)
+                    amount = balance_after_fee * 0.50
+                    self.amount_input.value = f"{amount:.8f}"
+
+
+    def set_75_amount(self, context):
+        if self.address_selection.value.select_address:
+            selected_address = self.address_selection.value.select_address
+            balance = self.address_balance.text
+            if selected_address == "Main Account":
+                if float(balance) > 0.0002:
+                    balance_after_fee = float(balance) - 0.0001
+                    amount = balance_after_fee * 0.75
+                    self.amount_input.value = f"{amount:.8f}"
+            else:
+                if float(balance) > 0:
+                    fee = self.fee_input.value
+                    balance_after_fee = float(balance) - float(fee)
+                    amount = balance_after_fee * 0.75
+                    self.amount_input.value = f"{amount:.8f}"
+
+
+    def set_max_amount(self, context):
+        if self.address_selection.value.select_address:
+            selected_address = self.address_selection.value.select_address
+            balance = self.address_balance.text
+            if selected_address == "Main Account":
+                if float(balance) > 0.0002:
+                    amount = float(balance) - 0.0001
+                    self.amount_input.value = f"{amount:.8f}"
+            else:
+                if float(balance) > 0:
+                    fee = self.fee_input.value
+                    amount = float(balance) - float(fee)
+                    self.amount_input.value = f"{amount:.8f}"
+
+
+    def set_slow_fee(self, context):
+        self.fee_input.value = "0.00000100"
+
+    def set_normal_fee(self, context):
+        self.fee_input.value = "0.00001000"
+
+    def set_fast_fee(self, context):
+        self.fee_input.value = "0.00010000"
 
 
     def transparent_button_click(self, button):
@@ -584,7 +734,7 @@ class Send(Box):
                 if float(balance) <= 0:
                     self.address_balance.style.color = GRAY
                 else:
-                    self.address_balance.style.color = WHITE
+                    self.address_balance.style.color = BLACK
                 format_balance = self.utils.format_balance(float(balance))
                 self.address_balance.text = format_balance
         elif selected_address == "Main Account":
@@ -599,7 +749,7 @@ class Send(Box):
                 if float(transparent) <= 0:
                     self.address_balance.style.color = GRAY
                 else:
-                    self.address_balance.style.color = WHITE
+                    self.address_balance.style.color = BLACK
                 format_balance = self.utils.format_balance(float(transparent))
                 self.address_balance.text = format_balance
         else:
@@ -684,10 +834,10 @@ class Send(Box):
 
     def update_fees_option(self, option):
         if option:
-            self.fees_box.style.visibility = VISIBLE
+            self.insert(5, self.fees_box)
             self.app.add_background_task(self.set_default_fee)
         else:
-            self.fees_box.style.visibility = HIDDEN
+            self.remove(self.fees_box)
 
     async def set_default_fee(self, widget):
         result, _= await self.commands.getInfo()
