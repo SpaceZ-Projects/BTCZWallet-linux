@@ -1,5 +1,6 @@
 
 import asyncio
+import webbrowser
 
 from toga import (
     MainWindow, Box, Button
@@ -17,6 +18,7 @@ from .home import Home
 from .txs import Transactions
 from .recieve import Recieve
 from .send import Send
+from .mining import Mining
 from .status import AppStatusBar
 from .toolbar import AppToolbar
 
@@ -36,7 +38,7 @@ class Menu(MainWindow):
         
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
-        self.on_close = self.on_close_menu
+        self.on_close = self.exit_app
 
         self.main_box = Box(
             style=Pack(
@@ -65,6 +67,7 @@ class Menu(MainWindow):
         self.transactions_page = Transactions(self.app, self)
         self.recieve_page = Recieve(self.app, self)
         self.send_page = Send(self.app, self)
+        self.mining_page = Mining(self.app, self)
 
         self.main_box.add(
             self.wallet,
@@ -75,13 +78,8 @@ class Menu(MainWindow):
 
         self.content = self.main_box
         
-        self.insert_toolbar()
-
-    def insert_toolbar(self):
-        self.app.commands.clear()
-        self.apptoolbar = AppToolbar(self.app)
-        self.apptoolbar.exit_cmd.action = self.on_close_menu
         self.insert_menu_buttons()
+
 
     def insert_menu_buttons(self):
         self.home_button = Button(
@@ -171,7 +169,72 @@ class Menu(MainWindow):
     async def set_default_page(self, widget):
         await asyncio.sleep(0.5)
         self.home_button_click(None)
+        self.add_actions_cmds()
         self.app.add_background_task(self.transactions_page.update_transactions)
+
+
+    def add_actions_cmds(self):
+        self.app.commands.clear()
+        self.apptoolbar = AppToolbar(self.app)
+        self.apptoolbar.exit_cmd.action = self.exit_app
+        self.apptoolbar.stop_exit_cmd.action = self.stop_node_exit
+        self.apptoolbar.generate_t_cmd.action = self.generate_transparent_address
+        self.apptoolbar.generate_z_cmd.action = self.generate_private_address
+        self.apptoolbar.check_update_cmd.action = self.check_app_version
+
+
+    async def generate_transparent_address(self, action):
+        new_address = await self.commands.getNewAddress()
+        if new_address:
+            if self.recieve_page.transparent_toggle:
+                self.insert_new_address(new_address[0])
+            if self.send_page.transparent_toggle:
+                await self.send_page.update_send_options(None)
+            self.info_dialog(
+                title="New Address",
+                message=f"Generated address : {new_address[0]}"
+            )
+
+
+    async def generate_private_address(self, widget):
+        new_address = await self.commands.z_getNewAddress()
+        if new_address:
+            if self.recieve_page.private_toggle:
+                self.insert_new_address(new_address[0])
+            if self.send_page.private_toggle:
+                await self.send_page.update_send_options(None)
+            self.info_dialog(
+                title="New Address",
+                message=f"Generated address : {new_address[0]}"
+            )
+
+
+    def insert_new_address(self, address):
+        self.recieve_page.addresses_table.data.insert(
+            0, address
+        )
+
+
+    async def check_app_version(self, widget):
+        git_version, link = await self.utils.get_repo_info()
+        if git_version:
+            self.git_link = link
+            current_version = self.app.version
+            if git_version == current_version:
+                self.info_dialog(
+                    title="Check updates",
+                    message=f"Current version: {current_version}\nThe app version is up to date."
+                )
+            else:
+                self.question_dialog(
+                    title="Check updates",
+                    message=f"Current version: {current_version}\nGit version: {git_version}\nWould you like to update the app ?",
+                    on_result=self.update_app_result
+                )
+
+    def update_app_result(self, widget, result):
+        if result is True:
+            webbrowser.open(self.git_link)
 
 
     def home_button_click(self, button):
@@ -228,6 +291,8 @@ class Menu(MainWindow):
         self.mining_button.style.color = BLACK
         self.mining_button.style.background_color = YELLOW
         self.mining_button.on_press = None
+        self.pages.add(self.mining_page)
+        self.app.add_background_task(self.mining_page.insert_widgets)
 
 
     def clear_buttons(self):
@@ -267,10 +332,15 @@ class Menu(MainWindow):
 
         elif self.mining_button_toggle:
             self.mining_button_toggle = None
+            self.pages.remove(self.mining_page)
             self.mining_button.style.color = GRAY
             self.mining_button.style.background_color = WHITE
-            self.mining_button.on_press = self.message_button_click
+            self.mining_button.on_press = self.mining_button_click
             
 
-    def on_close_menu(self, widget):
+    async def stop_node_exit(self, action):
+        await self.commands.stopNode()
+        self.app.exit()
+
+    def exit_app(self, action):
         self.app.exit()

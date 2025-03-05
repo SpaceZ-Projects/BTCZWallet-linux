@@ -151,7 +151,7 @@ class Utils():
     def get_miner_path(self, miner):
         miner_folder = miner
         if miner == "MiniZ":
-            miner_file = "MiniZ"
+            miner_file = "miniZ"
             url = "https://github.com/miniZ-miner/miniZ/releases/download/v2.4e/"
             zip_file = "miniZ_v2.4e_linux-x64.tar.gz"
         elif miner == "Gminer":

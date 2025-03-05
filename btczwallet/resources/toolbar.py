@@ -11,6 +11,12 @@ class AppToolbar():
             order = 0
         )
 
+        self.about_cmd = Command(
+            text="About",
+            group=self.app_menu,
+            action=self.display_about_dialog
+        )
+
         self.exit_cmd = Command(
             text="Exit",
             group=self.app_menu,
@@ -60,9 +66,14 @@ class AppToolbar():
         )
 
         self.app.commands.add(
+            self.about_cmd,
             self.exit_cmd,
             self.stop_exit_cmd,
             self.generate_t_cmd,
             self.generate_z_cmd,
             self.check_update_cmd
         )
+
+
+    def display_about_dialog(self, action):
+        self.app.about()

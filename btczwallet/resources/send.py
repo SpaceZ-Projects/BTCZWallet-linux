@@ -453,7 +453,6 @@ class Send(Box):
             text="Cash Out",
             style=Pack(
                 color = BLACK,
-                text_align = CENTER,
                 font_weight = BOLD,
                 font_size = 12,
                 width = 120,
@@ -466,7 +465,6 @@ class Send(Box):
             style=Pack(
                 direction = ROW,
                 background_color = rgb(230,230,230),
-                flex = 1,
                 padding = 5,
                 alignment = CENTER,
                 height = 55

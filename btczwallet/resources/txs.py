@@ -152,6 +152,8 @@ class Txid(Window):
             text="Close",
             style=Pack(
                 alignment = CENTER,
+                font_weight = BOLD,
+                font_size = 12,
                 padding_bottom = 10,
                 width = 100
             ),
