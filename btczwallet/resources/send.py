@@ -7,7 +7,7 @@ from toga import (
     ImageView, Window, Switch, MultilineTextInput,
     Button
 )
-from ..framework import Gtk
+from ..framework import Gtk, Gdk
 
 from toga.style.pack import Pack
 from toga.constants import (
@@ -542,20 +542,20 @@ class Send(Box):
 
 
     def destination_input_context_event(self, widget, event):
-        if event.button == 3:
+        if event.button == Gdk.BUTTON_SECONDARY:
             self.destination_input_context_menu.popup_at_pointer(event)
             return True
         return False
     
 
     def amount_input_context_event(self, widget, event):
-        if event.button == 3:
+        if event.button == Gdk.BUTTON_SECONDARY:
             self.amount_input_context_menu.popup_at_pointer(event)
             return True
         return False
     
     def fee_input_context_event(self, widget, event):
-        if event.button == 3:
+        if event.button == Gdk.BUTTON_SECONDARY:
             self.fee_input_context_menu.popup_at_pointer(event)
             return True
         return False

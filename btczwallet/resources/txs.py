@@ -3,10 +3,13 @@ import asyncio
 import operator
 import json
 from datetime import datetime
+import webbrowser
+import time
 
 from toga import App, Box, Label, Window, Button, Table
+from ..framework import Gtk, Gdk, ClipBoard
 from toga.style.pack import Pack
-from toga.colors import GRAY, WHITE, GREEN, RED, ORANGE, BLACK
+from toga.colors import GRAY, GREEN, RED, ORANGE, BLACK
 from toga.constants import COLUMN, CENTER, BOLD, ROW, LEFT
 
 from .client import Client
@@ -14,16 +17,18 @@ from .utils import Utils
 
 
 class Txid(Window):
-    def __init__(self, txid):
+    def __init__(self, transactions, txid):
         super().__init__(
             size =(600, 150),
             resizable= False,
             minimizable = False,
-            closable=False
+            closable=False,
+            on_close=self.close_transaction_info
         )
 
         self.utils = Utils(self.app)
         self.commands = Client(self.app)
+        self.transactions = transactions
         self.txid = txid
 
         self.updating_txid = None
@@ -46,7 +51,7 @@ class Txid(Window):
                 font_weight = BOLD,
                 text_align = CENTER,
                 color = GRAY,
-                padding_left = 20
+                padding_left = 10
             )
         )
         self.txid_value = Label(
@@ -54,7 +59,7 @@ class Txid(Window):
             style=Pack(
                 font_weight = BOLD,
                 text_align = CENTER,
-                color = WHITE
+                color = BLACK
             )
         )
         self.txid_box = Box(
@@ -79,7 +84,7 @@ class Txid(Window):
             style=Pack(
                 font_weight = BOLD,
                 text_align = LEFT,
-                color = WHITE,
+                color = BLACK,
                 flex = 1
             )
         )
@@ -105,7 +110,7 @@ class Txid(Window):
             style=Pack(
                 font_weight = BOLD,
                 text_align = LEFT,
-                color = WHITE,
+                color = BLACK,
                 flex = 1
             )
         )
@@ -131,7 +136,7 @@ class Txid(Window):
             style=Pack(
                 font_weight = BOLD,
                 text_align = LEFT,
-                color = WHITE,
+                color = BLACK,
                 flex = 1
             )
         )
@@ -144,10 +149,11 @@ class Txid(Window):
         )
         
         self.close_button = Button(
-            icon="images/close_i",
+            text="Close",
             style=Pack(
                 alignment = CENTER,
-                padding_bottom = 10
+                padding_bottom = 10,
+                width = 100
             ),
             on_press=self.close_transaction_info
         )
@@ -209,6 +215,7 @@ class Txid(Window):
 
     def close_transaction_info(self, button):
         self.updating_txid = None
+        self.transactions.transaction_info_toggle = None
         self.close()
 
 
@@ -227,10 +234,15 @@ class Transactions(Box):
         self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
+        self.clipboard = ClipBoard()
 
         self.transactions_toggle = None
         self.no_transaction_toggle = None
         self.transactions_data = []
+        self.last_click_time = 0
+        self.double_click_threshold = 0.5
+        self.double_click_handler = None
+        self.transaction_info_toggle = None
 
         self.transactions_count = 49
         self.transactions_from = 0
@@ -244,6 +256,19 @@ class Transactions(Box):
                 font_weight = BOLD
             )
         )
+        transactions_table_widgets = self.transactions_table._impl.native.get_child()
+        transactions_table_widgets.connect("button-press-event", self.transactions_table_context_event)
+        self.transactions_table_context_menu = Gtk.Menu()
+        copy_address_item = Gtk.MenuItem(label="Copy address")
+        copy_address_item.connect("activate", self.copy_address)
+        copy_txid_item = Gtk.MenuItem(label="Copy transaction ID")
+        copy_txid_item.connect("activate", self.copy_transaction_id)
+        explorer_txid_item = Gtk.MenuItem(label="View txid in explorer")
+        explorer_txid_item.connect("activate", self.open_transaction_in_explorer)
+        self.transactions_table_context_menu.append(copy_address_item)
+        self.transactions_table_context_menu.append(copy_txid_item)
+        self.transactions_table_context_menu.append(explorer_txid_item)
+        self.transactions_table_context_menu.show_all()
 
         self.no_transaction = Label(
             text="No Transactions found.",
@@ -266,6 +291,55 @@ class Transactions(Box):
             else:
                 await self.no_transactions_found()
             self.transactions_toggle = True
+
+
+    def transactions_table_context_event(self, widget, event):
+        if event.button == Gdk.BUTTON_PRIMARY:
+            current_time = time.time()
+            if current_time - self.last_click_time <= self.double_click_threshold and not self.double_click_handler:
+                self.transactions_table_double_click(widget, event)
+                self.double_click_handler = True
+            else:
+                self.double_click_handler = False
+            self.last_click_time = current_time
+        elif event.button == Gdk.BUTTON_SECONDARY:
+            self.transactions_table_context_menu.popup_at_pointer(event)
+            return True
+        return False
+    
+
+    def copy_address(self, centext):
+        address = self.transactions_table.selection.address
+        self.clipboard.copy(address)
+        self.main.info_dialog(
+            title="Copied",
+            message="The address has copied to clipboard.",
+        )
+
+    def copy_transaction_id(self, context):
+        txid = self.transactions_table.selection.txid
+        self.clipboard.copy(txid)
+        self.main.info_dialog(
+            title="Copied",
+            message="The transaction ID has copied to clipboard.",
+        )
+
+    def open_transaction_in_explorer(self, context):
+        url = "https://explorer.btcz.rocks/tx/"
+        txid = self.transactions_table.selection.txid
+        transaction_url = url + txid
+        webbrowser.open(transaction_url)
+
+
+    def transactions_table_double_click(self, widget, event):
+        if not self.transaction_info_toggle:
+            txid = self.transactions_table.selection.txid
+            self.transaction_info = Txid(self, txid)
+            self.transaction_info.show()
+            self.double_click_handler = False
+            self.transaction_info_toggle = True
+        else:
+            return
 
 
     def create_rows(self, sorted_transactions):
