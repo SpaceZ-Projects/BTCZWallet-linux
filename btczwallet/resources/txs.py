@@ -7,7 +7,7 @@ import webbrowser
 import time
 
 from toga import App, Box, Label, Window, Button, Table
-from ..framework import Gtk, Gdk, ClipBoard
+from ..framework import Gtk, Gdk, ClipBoard, NotifyGtk
 from toga.style.pack import Pack
 from toga.colors import GRAY, GREEN, RED, ORANGE, BLACK
 from toga.constants import COLUMN, CENTER, BOLD, ROW, LEFT
@@ -393,6 +393,13 @@ class Transactions(Box):
                         }
                         self.transactions_data.insert(0, row)
                         self.add_transaction(0, row)
+                        notify = NotifyGtk(
+                            title="New Transaction",
+                            duration=10,
+                            message=f"{txid}",
+                            app=self.app
+                        )
+                        notify.popup()
             await asyncio.sleep(5)
 
 

@@ -21,6 +21,7 @@ from .send import Send
 from .mining import Mining
 from .status import AppStatusBar
 from .toolbar import AppToolbar
+from .notify import Notify
 
 class Menu(MainWindow):
     def __init__(self):
@@ -170,6 +171,8 @@ class Menu(MainWindow):
         await asyncio.sleep(0.5)
         self.home_button_click(None)
         self.add_actions_cmds()
+        self.statusicon = Notify(self.app)
+        self.statusicon.show()
         self.app.add_background_task(self.transactions_page.update_transactions)
 
 
