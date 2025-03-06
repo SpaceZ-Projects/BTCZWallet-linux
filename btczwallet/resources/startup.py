@@ -92,7 +92,8 @@ class BTCZSetup(Box):
                 text_align = LEFT,
                 color = GRAY,
                 font_weight = BOLD,
-                padding_top = 3
+                padding = (1,2,0,3),
+                font_size = 9
             )
         )
         self.blocks_value = Label(
@@ -101,7 +102,8 @@ class BTCZSetup(Box):
                 text_align = LEFT,
                 color = BLACK,
                 font_weight = BOLD,
-                padding_top = 3
+                padding_top = 1,
+                font_size = 9
             )
         )
         self.mediantime_text = Label(
@@ -109,7 +111,9 @@ class BTCZSetup(Box):
             style=Pack(
                 text_align = LEFT,
                 color = GRAY,
-                font_weight = BOLD
+                font_weight = BOLD,
+                padding = (0,2,0,3),
+                font_size = 9
             )
         )
         self.mediantime_value = Label(
@@ -117,7 +121,8 @@ class BTCZSetup(Box):
             style=Pack(
                 text_align = LEFT,
                 color = BLACK,
-                font_weight = BOLD
+                font_weight = BOLD,
+                font_size = 9
             )
         )
         self.sync_txt = Label(
@@ -126,7 +131,9 @@ class BTCZSetup(Box):
                 text_align = RIGHT,
                 flex = 1,
                 color = GRAY,
-                font_weight = BOLD
+                font_weight = BOLD,
+                font_size = 9,
+                padding_right = 2
             )
         )
         self.sync_value = Label(
@@ -134,7 +141,9 @@ class BTCZSetup(Box):
             style=Pack(
                 text_align = RIGHT,
                 color = BLACK,
-                font_weight = BOLD
+                font_weight = BOLD,
+                padding_right = 3,
+                font_size = 9
             )
         )
         self.index_size_txt = Label(
@@ -144,7 +153,8 @@ class BTCZSetup(Box):
                 flex = 1,
                 color=GRAY,
                 font_weight = BOLD,
-                padding_top = 3
+                padding = (1,2,0,0),
+                font_size = 9
             )
         )
         self.index_size_value = Label(
@@ -153,7 +163,8 @@ class BTCZSetup(Box):
                 text_align = RIGHT,
                 color = BLACK,
                 font_weight = BOLD,
-                padding_top = 3
+                padding = (1,3,0,0),
+                font_size = 9
             )
         )
         self.update_status_box()
@@ -212,7 +223,7 @@ class BTCZSetup(Box):
         await asyncio.sleep(1)
         bitcoinz_path = self.utils.get_bitcoinz_path()
         config_file_path = self.utils.get_config_path()
-        if not os.path.exists(bitcoinz_path):
+        if not os.path.exists(bitcoinz_path) or not os.listdir(bitcoinz_path):
             self.blockchaine_index = False
             os.makedirs(bitcoinz_path, exist_ok=True)
         else:
@@ -251,10 +262,7 @@ class BTCZSetup(Box):
 
     async def extract_bootstrap_file(self):
         self.status_label.text = "Extracting bootstrap..."
-        await self.utils.extract_7z_files(
-            self.status_label,
-            self.progress_bar
-        )
+        await self.utils.extract_7z_files()
         self.app.add_background_task(self.execute_bitcoinz_node)
 
 

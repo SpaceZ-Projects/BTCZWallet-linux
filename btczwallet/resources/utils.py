@@ -343,7 +343,7 @@ class Utils():
         setup_miner_box.remove(progress_bar)
 
 
-    async def extract_7z_files(self, label, progress_bar):
+    async def extract_7z_files(self):
         bitcoinz_path = self.get_bitcoinz_path()
         file_paths = [
             os.path.join(bitcoinz_path, 'bootstrap.dat.7z.001'),
@@ -352,46 +352,35 @@ class Utils():
             os.path.join(bitcoinz_path, 'bootstrap.dat.7z.004')
         ]
         combined_file = os.path.join(bitcoinz_path, "combined_bootstrap.7z")
-        with open(combined_file, 'wb') as outfile:
-                for file_path in file_paths:
-                    with open(file_path, 'rb') as infile:
-                        while chunk := infile.read(1024):
-                            outfile.write(chunk)
+        await asyncio.to_thread(self.combine_files, file_paths, combined_file)
         for file_path in file_paths:
             if os.path.exists(file_path):
                 os.remove(file_path)
+
         self.extract_progress_status = True
         try:
-            with py7zr.SevenZipFile(combined_file, mode='r') as archive:
-                await self.extract_progress(label, progress_bar, bitcoinz_path)
-                archive.extractall(path=bitcoinz_path)
-                self.extract_progress_status = False
+            await asyncio.to_thread(self.extract_7z, combined_file, bitcoinz_path)
+            self.extract_progress_status = False
         except Exception as e:
             print(f"Error extracting file: {e}")
-
         os.remove(combined_file)
 
-    
-    async def extract_progress(self, label, progress_bar, bitcoinz_path):
-        total_size = 5495725462
-        total_size_gb = total_size / (1024 ** 3)
-        while True:
-            if not self.extract_progress_status:
-                return
-            dat_file = os.path.join(bitcoinz_path, "bootstrap.dat")
-            current_size = os.path.getsize(dat_file)
-            current_size_gb = current_size / (1024 ** 3)
-            progress = int((current_size / total_size) * 100)
-            text = f"Extracting... {current_size_gb:.2f} / {total_size_gb:.2f} GB"
-            self.update_status_label(label, text, None)
-            self.update_progress_bar(progress_bar, progress)
-            await asyncio.sleep(3)
+    def combine_files(self, file_paths, combined_file):
+        with open(combined_file, 'wb') as outfile:
+            for file_path in file_paths:
+                with open(file_path, 'rb') as infile:
+                    while chunk := infile.read(1024):
+                        outfile.write(chunk)
+
+    def extract_7z(self, combined_file, bitcoinz_path):
+        with py7zr.SevenZipFile(combined_file, mode='r') as archive:
+            archive.extractall(path=bitcoinz_path)
 
     def update_status_label(self, label, text, progress):
         if progress is None:
-            label._impl.native.Text = text
+            label.text = text
         else:
-            label._impl.native.Text = f"{text}{progress}"
+            label.text = f"{text}{progress}"
 
     def update_progress_bar(self, progress_bar, progress):
         progress_bar.value = progress
