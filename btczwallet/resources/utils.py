@@ -192,8 +192,10 @@ class Utils():
                         self.file_handle.close()
                         self.file_handle = None
                         await session.close()
+                        def extract_filter(tarinfo, fileobj):
+                            return tarinfo
                         with tarfile.open(destination, 'r:gz') as tar_ref:
-                            tar_ref.extractall(self.app_data)
+                            tar_ref.extractall(self.app_data, filter=extract_filter)
                         extracted_folder = os.path.join(str(self.app_data), "bitcoinz-c73d5cdb2b70")
                         bin_folder = os.path.join(extracted_folder, "bin")
                         for exe_file in ["bitcoinzd", "bitcoinz-cli", "bitcoinz-tx"]:
@@ -329,9 +331,10 @@ class Utils():
         elif miner_folder == "Gminer":
             miner_name = "miner"
             tar_extension = 'r:xz'
-        
+        def extract_filter(tarinfo, fileobj):
+            return tarinfo
         with tarfile.open(destination, tar_extension) as tar_ref:
-            tar_ref.extractall(miner_dir)
+            tar_ref.extractall(miner_dir, filter=extract_filter)
         for root, dirs, files in os.walk(miner_dir):
             for file_name in files:
                 if file_name != miner_name:
