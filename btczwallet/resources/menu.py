@@ -18,6 +18,7 @@ from .home import Home
 from .txs import Transactions
 from .recieve import Recieve
 from .send import Send
+from .messages import Messages
 from .mining import Mining
 from .status import AppStatusBar
 from .toolbar import AppToolbar
