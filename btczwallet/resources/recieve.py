@@ -10,7 +10,7 @@ from toga import (
 from ..framework import ClipBoard
 from toga.style.pack import Pack
 from toga.constants import COLUMN, ROW, CENTER, BOLD, TOP
-from toga.colors import rgb, WHITE, GRAY, BLACK, YELLOW
+from toga.colors import rgb, GRAY, BLACK, YELLOW, TRANSPARENT
 
 from .utils import Utils
 from .client import Client
@@ -37,6 +37,16 @@ class Recieve(Box):
         self.recieve_toggle = None
         self.transparent_toggle = None
         self.private_toggle = None
+
+        mode = self.utils.get_sys_mode()
+        if mode:
+            copy_icon = "images/copy_w"
+            key_icon = "images/key_w"
+            explorer_icon = "images/explorer_w"
+        else:
+            copy_icon = "images/copy_b"
+            key_icon = "images/key_b"
+            explorer_icon = "images/explorer_b"
 
         self.addresses_box = Box(
             style=Pack(
@@ -92,7 +102,6 @@ class Recieve(Box):
             accessors={"addresses"},
             style=Pack(
                 flex = 1,
-                color = BLACK,
                 font_weight = BOLD
             ),
             on_select=self.get_address_balance
@@ -135,30 +144,29 @@ class Recieve(Box):
             text="",
             style=Pack(
                 direction = COLUMN,
-                color = BLACK,
                 text_align = CENTER,
                 font_weight = BOLD,
                 font_size = 14,
-                padding = (20,50,0,50) ,
+                padding = (20,50,0,50),
                 flex =1,
                 alignment = TOP
             )
         )
 
         self.copy_address = Button(
-            icon="images/copy",
+            icon=copy_icon,
             on_press=self.copy_address_clipboard
         )
         self.copy_address._impl.native.set_tooltip_text("Copy the selected address")
 
         self.copy_key = Button(
-            icon="images/key.png",
+            icon=key_icon,
             on_press=self.copy_key_clipboard
         )
         self.copy_key._impl.native.set_tooltip_text("Copy the key of selected address")
 
         self.explorer_address = Button(
-            icon="images/explorer",
+            icon=explorer_icon,
             on_press=self.open_address_explorer
         )
         self.explorer_address._impl.native.set_tooltip_text("Open the selected in explorer")
@@ -251,12 +259,12 @@ class Recieve(Box):
     def clear_buttons(self):
         if self.transparent_toggle:
             self.transparent_button.style.color = GRAY
-            self.transparent_button.style.background_color = WHITE
+            self.transparent_button.style.background_color = TRANSPARENT
             self.transparent_toggle = None
 
         elif self.private_toggle:
             self.private_button.style.color = GRAY
-            self.private_button.style.background_color = WHITE
+            self.private_button.style.background_color = TRANSPARENT
             self.private_toggle = None
 
 
@@ -338,3 +346,18 @@ class Recieve(Box):
         else:
             address_items = []
         return address_items
+    
+
+    def update_recieve_mode(self, widget):
+        mode = self.utils.get_sys_mode()
+        if mode:
+            copy_icon = "images/copy_w"
+            key_icon = "images/key_w"
+            explorer_icon = "images/explorer_w"
+        else:
+            copy_icon = "images/copy_b"
+            key_icon = "images/key_b"
+            explorer_icon = "images/explorer_b"
+        self.copy_address.icon = copy_icon
+        self.copy_key.icon = key_icon
+        self.explorer_address.icon = explorer_icon

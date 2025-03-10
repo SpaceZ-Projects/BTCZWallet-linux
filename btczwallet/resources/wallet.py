@@ -29,6 +29,11 @@ class Wallet(Box):
         self.utils = Utils(self.app)
 
         self.unconfirmed_balance_toggle = None
+        mode = self.utils.get_sys_mode()
+        if mode:
+            background_color = rgb(56, 56, 56)
+        else:
+            background_color = rgb(230,230,230)
 
         self.bitcoinz_logo = ImageView(
             image="images/BTCZ.png",
@@ -53,7 +58,7 @@ class Wallet(Box):
         self.balances_box = Box(
             style=Pack(
                 direction = COLUMN,
-                background_color = rgb(230,230,230),
+                background_color = background_color,
                 padding = 10,
                 alignment = RIGHT,
                 width = 350
@@ -76,7 +81,6 @@ class Wallet(Box):
                 font_size = 13,
                 font_weight = BOLD,
                 text_align = CENTER,
-                color = BLACK,
                 padding_top = 5
             )
         )
@@ -116,7 +120,6 @@ class Wallet(Box):
             text="",
             style=Pack(
                 text_align = CENTER,
-                color = BLACK,
                 font_weight = BOLD
             )
         )
@@ -225,3 +228,12 @@ class Wallet(Box):
                         self.unconfirmed_balance_toggle = False
                     
             await asyncio.sleep(5)
+
+    
+    def update_wallet_mode(self, widget):
+        mode = self.utils.get_sys_mode()
+        if mode:
+            background_color = rgb(56,56,56)
+        else:
+            background_color = rgb(230,230,230)
+        self.balances_box.style.background_color = background_color

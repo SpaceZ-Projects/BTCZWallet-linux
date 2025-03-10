@@ -2,7 +2,6 @@
 import asyncio
 import json
 import psutil
-import subprocess
 import re
 
 from toga import (
@@ -40,6 +39,12 @@ class Mining(Box):
         self.worker_name = None
         self.mining_status = None
 
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+
         self.miner_label = Label(
             text="Miner :",
             style=Pack(
@@ -58,7 +63,6 @@ class Mining(Box):
                 {"miner": "Gminer"}
             ],
             style=Pack(
-                color = GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 flex = 2,
@@ -80,7 +84,7 @@ class Mining(Box):
         self.setup_miner_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 alignment = CENTER,
                 flex = 1 
             )
@@ -89,7 +93,7 @@ class Mining(Box):
         self.selection_miner_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding=(10,5,0,5),
                 height = 55
             )
@@ -108,7 +112,6 @@ class Mining(Box):
         )
         self.address_selection = Selection(
             style=Pack(
-                color = WHITE,
                 font_weight = BOLD,
                 font_size = 12,
                 flex = 2,
@@ -133,7 +136,7 @@ class Mining(Box):
         self.selection_address_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding=(5,5,0,5),
                 height = 55
             )
@@ -152,7 +155,6 @@ class Mining(Box):
         )
         self.pool_selection = Selection(
             style=Pack(
-                color = WHITE,
                 font_weight = BOLD,
                 font_size = 12,
                 flex = 2,
@@ -173,7 +175,6 @@ class Mining(Box):
 
         self.pool_region_selection = Selection(
             style=Pack(
-                color = WHITE,
                 font_weight = BOLD,
                 font_size = 12,
                 flex = 1,
@@ -186,7 +187,7 @@ class Mining(Box):
         self.selection_pool_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding=(5,5,0,5),
                 height = 55
             )
@@ -206,7 +207,6 @@ class Mining(Box):
         self.worker_input = TextInput(
             placeholder="Wroker Name",
             style=Pack(
-                color = BLACK,
                 text_align= CENTER,
                 font_weight = BOLD,
                 font_size = 12,
@@ -218,14 +218,14 @@ class Mining(Box):
         self.empty_box = Box(
             style=Pack(
                 flex = 4,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
             )
         )
         self.worker_box = Box(
            style=Pack(
                 direction = ROW,
                 padding = (5,5,0,5),
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 height = 50
             ) 
         )
@@ -237,6 +237,7 @@ class Mining(Box):
                 padding = (5,10,0,10)
             ) 
         )
+        self.ouputs_box._impl.native.connect("size-allocate", self.ouputs_box_on_resize)
 
         self.ouputs_scroll = ScrollContainer(
             content=self.ouputs_box,
@@ -248,7 +249,7 @@ class Mining(Box):
         self.mining_box = Box(
             style=Pack(
                 direction = COLUMN,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 flex = 1
             )
         )
@@ -256,7 +257,6 @@ class Mining(Box):
         self.start_mining_button = Button(
             text="Start Mining",
             style=Pack(
-                color = BLACK,
                 font_weight = BOLD,
                 font_size = 12,
                 width = 130,
@@ -268,7 +268,7 @@ class Mining(Box):
         self.start_mining_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding = 5,
                 alignment = CENTER,
                 height = 55
@@ -463,7 +463,7 @@ class Mining(Box):
                 if stdout_line:
                     decoded_line = stdout_line.decode().strip()
                     cleaned_line = clean_regex.sub('', decoded_line)
-                    self.print_outputs(cleaned_line)
+                    await self.print_outputs(cleaned_line)
                 else:
                     break
             await self.process.wait()
@@ -479,25 +479,27 @@ class Mining(Box):
         finally:
             self.disable_mining_button()
             self.update_mining_button("start")
-            self.enable_mining_inputs()
             self.enable_mining_button()
+            self.enable_mining_inputs()
 
 
-    def print_outputs(self, line):
+    async def print_outputs(self, line):
         output_value = Label(
             text=line,
             style=Pack(
-                color = BLACK,
-                background_color = rgb(230,230,230),
                 font_size = 10
             )
         )
         self.ouputs_box.add(
             output_value
         )
-        if self.ouputs_scroll.vertical_position == self.ouputs_scroll.max_vertical_position:
-            return
+        await asyncio.sleep(0.1)
         self.ouputs_scroll.vertical_position = self.ouputs_scroll.max_vertical_position
+
+
+    def ouputs_box_on_resize(self, widget, allocation):
+        if self.mining_toggle:
+            self.ouputs_scroll.vertical_position = self.ouputs_scroll.max_vertical_position
 
         
     async def update_mining_options(self, widget):
@@ -518,7 +520,7 @@ class Mining(Box):
             self.process.terminate()
             self.ouputs_box.clear()
             self.mining_status = False
-            self.print_outputs("Miner Stopped !")
+            await self.print_outputs("Miner Stopped !")
         except Exception as e:
             print(f"Exception occurred while killing process: {e}")
 
@@ -552,3 +554,19 @@ class Mining(Box):
         self.pool_selection.enabled = True
         self.pool_region_selection.enabled = True
         self.worker_input.readonly = False
+
+
+    def update_mining_mode(self, widget):
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+        self.setup_miner_box.style.background_color = panel_color
+        self.selection_miner_box.style.background_color = panel_color
+        self.selection_address_box.style.background_color= panel_color
+        self.selection_pool_box.style.background_color = panel_color
+        self.empty_box.style.background_color = panel_color
+        self.worker_box.style.background_color = panel_color
+        self.mining_box.style.background_color = panel_color
+        self.start_mining_box.style.background_color = panel_color

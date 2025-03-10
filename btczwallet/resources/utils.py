@@ -13,6 +13,7 @@ from datetime import timedelta
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 
+from ..framework import Gtk
 from toga import App
 
 GITHUB_API_URL = "https://api.github.com/repos/SpaceZ-Projects/BTCZWallet-linux"
@@ -96,6 +97,12 @@ class Utils():
         x = (screen_width - window_width) // 2
         y = (screen_height - window_height) // 2
         return (x, y)
+    
+    def get_sys_mode(self):
+        mode = Gtk.Settings.get_default().get_property("gtk-theme-name")
+        if "dark" in mode.lower():
+            return True
+        return False
     
     def get_bitcoinz_size(self):
         bitcoinz_path = self.get_bitcoinz_path()
@@ -476,11 +483,18 @@ addnode=37.187.76.80:1989
         return remaining_days
     
     def create_curve(self, data):
+        mode = self.get_sys_mode()
+        if mode:
+            background_color = "#383838"
+            text_color = "white"
+        else:
+            background_color = "white"
+            text_color = "black"
         df = pd.DataFrame(data, columns=["timestamp", "price"])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         df['formatted_price'] = df['price'].apply(lambda x: self.format_price(x))
         width, height = 2400, 600
-        img = Image.new("RGB", (width, height), color="white")
+        img = Image.new("RGB", (width, height), color=background_color)
         draw = ImageDraw.Draw(img)
         margin_left = 120
         margin_top = 50
@@ -509,13 +523,14 @@ addnode=37.187.76.80:1989
             timestamp = df['timestamp'].iloc[i]
             x = scale_x(timestamp)
             y = height - margin_bottom + 10
-            draw.text((x, y), timestamp.strftime('%H:%M:%S'), font=font, fill="black")
+            draw.text((x, y), timestamp.strftime('%H:%M:%S'), font=font, fill=text_color)
         price_interval = (max_price - min_price) / 7
         for i in range(0, 8):
             price = min_price + i * price_interval
             y = scale_y(price)
-            draw.text((margin_left - 100, y - 10), f"{self.format_price(price)}", font=font, fill="black")
-        curve_image_path = os.path.join(self.app_cache, 'curve.png')
+            draw.text((margin_left - 100, y - 10), f"{self.format_price(price)}", font=font, fill=text_color)
+        timestamp_str = df['timestamp'].iloc[0].strftime('%Y%m%d_%H%M%S')
+        curve_image_path = os.path.join(self.app_cache, f'curve_{timestamp_str}.png')
         img.save(curve_image_path)
 
         return curve_image_path

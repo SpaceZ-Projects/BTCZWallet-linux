@@ -2,6 +2,7 @@
 import asyncio
 import requests
 from datetime import datetime
+import os
 
 from toga import App, Box, Label, ImageView
 from toga.style.pack import Pack
@@ -9,7 +10,7 @@ from toga.constants import (
     COLUMN, ROW, TOP, LEFT, BOLD, RIGHT,
     CENTER
 )
-from toga.colors import GRAY, BLACK, rgb
+from toga.colors import GRAY
 
 from .utils import Utils
 from .client import Client
@@ -32,12 +33,13 @@ class Home(Box):
         self.home_toggle = None
         self.cap_toggle = None
         self.volume_toggle = None
-        self.curve_toggle = None
+        self.curve_image = None
+        self.data = None
 
         self.market_label = Label(
             text="MarketCap :",
             style=Pack(
-                font_size = 12,
+                font_size = 11,
                 text_align = LEFT,
                 color = GRAY,
                 font_weight = BOLD,
@@ -49,10 +51,10 @@ class Home(Box):
                 direction = ROW,
                 alignment = TOP,
                 height = 45,
-                background_color = rgb(230,230,230),
                 padding = (5,5,0,5)
             )
         )
+        self.market_box._impl.native.connect("size-allocate", self.on_box_resized)
 
         self.price_label = Label(
             text="Price :",
@@ -70,7 +72,6 @@ class Home(Box):
             style=Pack(
                 font_size = 10,
                 text_align = LEFT,
-                color = BLACK,
                 font_weight = BOLD,
                 padding = (11,0,10,0),
                 flex = 1
@@ -92,7 +93,6 @@ class Home(Box):
             style=Pack(
                 font_size = 10,
                 text_align = LEFT,
-                color = BLACK,
                 font_weight = BOLD,
                 padding = (11,0,10,0),
                 flex = 1
@@ -114,7 +114,6 @@ class Home(Box):
             style=Pack(
                 font_size = 10,
                 text_align = LEFT,
-                color = BLACK,
                 font_weight = BOLD,
                 padding = (11,0,10,0),
                 flex = 1
@@ -137,7 +136,50 @@ class Home(Box):
             style=Pack(
                 font_size = 10,
                 text_align = LEFT,
-                color = BLACK,
+                font_weight = BOLD,
+                padding = (11,0,10,0),
+                flex = 1
+            )
+        )
+
+        self.cap_label = Label(
+            "Cap :",
+            style=Pack(
+                font_size = 11,
+                text_align = LEFT,
+                color = GRAY,
+                font_weight = BOLD,
+                padding = 10
+            )
+        )
+
+        self.cap_value = Label(
+            "",
+            style=Pack(
+                font_size = 10,
+                text_align = LEFT,
+                font_weight = BOLD,
+                padding = (11,0,10,0),
+                flex = 1
+            )
+        )
+
+        self.volume_label = Label(
+            "Volume :",
+            style=Pack(
+                font_size = 11,
+                text_align = LEFT,
+                color = GRAY,
+                font_weight = BOLD,
+                padding = 10
+            )
+        )
+
+        self.volume_value = Label(
+            "",
+            style=Pack(
+                font_size = 10,
+                text_align = LEFT,
                 font_weight = BOLD,
                 padding = (11,0,10,0),
                 flex = 1
@@ -166,9 +208,8 @@ class Home(Box):
         self.halving_label = Label(
             text="",
             style=Pack(
-                font_size = 14,
+                font_size = 12,
                 text_align = CENTER,
-                color = BLACK,
                 font_weight = BOLD,
                 padding_top = 10
             )
@@ -177,9 +218,8 @@ class Home(Box):
         self.remaining_label = Label(
             text="",
             style=Pack(
-                font_size = 14,
+                font_size = 12,
                 text_align = CENTER,
-                color = BLACK,
                 font_weight = BOLD,
                 padding_bottom = 10
             )
@@ -261,6 +301,8 @@ class Home(Box):
             data = self.fetch_marketcap()
             if data:
                 market_price = data["market_data"]["current_price"]["usd"]
+                market_cap = data["market_data"]["market_cap"]["usd"]
+                market_volume = data["market_data"]["total_volume"]["usd"]
                 price_percentage_24 = data["market_data"]["price_change_percentage_24h"]
                 price_percentage_7d = data["market_data"]["price_change_percentage_7d"]
                 last_updated = data["market_data"]["last_updated"]
@@ -272,14 +314,63 @@ class Home(Box):
                 self.percentage_24_value.text = f"%{price_percentage_24}"
                 self.percentage_7_value.text = f"%{price_percentage_7d}"
                 self.last_updated_label.text = formatted_last_updated
+                self.cap_value.text = f"${market_cap}"
+                self.volume_value.text = f"${market_volume}"
             await asyncio.sleep(601)
+            
 
     async def update_marketchar(self, widget):
         while True:
-            data = self.fetch_marketchart()
-            if data:
-                curve_image = self.utils.create_curve(data)
+            self.data = self.fetch_marketchart()
+            if self.data:
+                curve_image = self.utils.create_curve(self.data)
                 if curve_image:
                     self.bitcoinz_curve.image = curve_image
+                    if self.curve_image:
+                        os.remove(self.curve_image)
+                    self.curve_image = curve_image
 
-            await asyncio.sleep(3600)
+            await asyncio.sleep(602)
+
+
+    def clear_cache(self):
+        if self.curve_image:
+            os.remove(self.curve_image)
+
+
+    def update_home_mode(self, widget):
+        curve_image = self.utils.create_curve(self.data)
+        if curve_image:
+            self.bitcoinz_curve.image = curve_image
+
+
+    def on_box_resized(self, widget, allocation):
+        width = allocation.width
+        if not self.cap_toggle:
+            if width >= 1000:
+                self.market_box.add(
+                    self.cap_label,
+                    self.cap_value
+                )
+                self.cap_toggle = True
+        elif self.cap_toggle:
+            if width < 1000:
+                self.market_box.remove(
+                    self.cap_label,
+                    self.cap_value
+                )
+                self.cap_toggle = None
+        if not self.volume_toggle:
+            if width >= 1200:
+                self.market_box.add(
+                    self.volume_label,
+                    self.volume_value
+                )
+                self.volume_toggle = True
+        elif self.volume_toggle:
+            if width < 1200:
+                self.market_box.remove(
+                    self.volume_label,
+                    self.volume_value
+                )
+                self.volume_toggle = None

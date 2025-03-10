@@ -67,10 +67,8 @@ class NotifyGtk():
         title: str,
         message: str,
         duration: int,
-        on_press: Optional[Callable] = None,
-        app:App = None
+        on_press: Optional[Callable] = None
     ):  
-        self.app = app
         self.app_path  = get_app_path()
 
         self.title = title
@@ -78,7 +76,7 @@ class NotifyGtk():
         self.duration = duration
         self.on_press = on_press
 
-        Notify.init(self.app.formal_name)
+        Notify.init("Btczwallet")
         self.notification = Notify.Notification.new(self.title, self.message)
         if self.on_press:
             self.notification.connect("closed", self.on_notification_click)

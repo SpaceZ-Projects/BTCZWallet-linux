@@ -13,9 +13,7 @@ from toga.style.pack import Pack
 from toga.constants import (
     COLUMN, ROW, TOP, BOLD, CENTER, LEFT
 )
-from toga.colors import (
-    rgb, GRAY, WHITE, YELLOW, BLACK, RED
-)
+from toga.colors import rgb, GRAY, YELLOW, BLACK, RED, TRANSPARENT
 from .client import Client
 from .utils import Utils
 from .storage import Storage
@@ -43,10 +41,15 @@ class Send(Box):
         self.is_valid_toggle = None
         self.z_addresses_limit_toggle = None
 
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+
         self.switch_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
                 alignment = TOP,
                 height = 35,
                 padding = (5,5,0,5)
@@ -80,9 +83,9 @@ class Send(Box):
         self.from_address_label = Label(
             text="From :",
             style=Pack(
-                color = BLACK,
+                color = GRAY,
                 font_weight = BOLD,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_size = 11,
                 text_align = CENTER,
                 padding = (16,0,0,10)
@@ -90,7 +93,6 @@ class Send(Box):
         )
         self.address_selection = Selection(
             style=Pack(
-                color = GRAY,
                 font_weight = BOLD,
                 font_size = 11,
                 flex = 2,
@@ -103,8 +105,7 @@ class Send(Box):
         self.address_balance = Label(
             text="0.00000000",
             style=Pack(
-                color = GRAY,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 text_align = CENTER,
@@ -115,7 +116,7 @@ class Send(Box):
         self.selection_address_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding=(10,5,0,5),
                 height = 55
             )
@@ -124,8 +125,7 @@ class Send(Box):
         self.single_option = Switch(
             text="Single",
             style=Pack(
-                color = GRAY,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11
             ),
@@ -136,8 +136,7 @@ class Send(Box):
         self.many_option = Switch(
             text="Many",
             style=Pack(
-                color = GRAY,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 padding_left = 20
@@ -149,7 +148,7 @@ class Send(Box):
         self.send_options_switch = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding=(5,5,0,5),
                 height = 35,
                 alignment = CENTER
@@ -158,7 +157,7 @@ class Send(Box):
         self.send_options_box = Box(
             style=Pack(
                 direction = COLUMN,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding=(5,5,0,5),
                 height = 35,
                 alignment = CENTER
@@ -168,8 +167,8 @@ class Send(Box):
         self.destination_label = Label(
             text="To :",
             style=Pack(
-                color = BLACK,
-                background_color = rgb(230,230,230),
+                color = GRAY,
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 text_align = CENTER,
@@ -181,8 +180,7 @@ class Send(Box):
         self.destination_input_single = TextInput(
             placeholder="address",
             style=Pack(
-                color = BLACK,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 flex = 2,
@@ -200,8 +198,6 @@ class Send(Box):
         self.destination_input_many = MultilineTextInput(
             placeholder="addresses list",
             style=Pack(
-                color = BLACK,
-                background_color = rgb(213,213,213),
                 font_weight = BOLD,
                 font_size = 11,
                 flex = 2,
@@ -213,7 +209,7 @@ class Send(Box):
 
         self.is_valid = ImageView(
             style=Pack(
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 width = 30,
                 height = 30,
                 padding= (11,0,0,10)
@@ -222,7 +218,7 @@ class Send(Box):
         self.is_valid_box = Box(
             style=Pack(
                 direction = COLUMN,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 flex = 1 
             )
         )
@@ -230,7 +226,7 @@ class Send(Box):
         self.destination_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding = (0,5,0,5),
                 height = 55
             )
@@ -239,8 +235,8 @@ class Send(Box):
         self.amount_label = Label(
             text="Amount :",
             style=Pack(
-                color = BLACK,
-                background_color = rgb(230,230,230),
+                color = GRAY,
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 text_align = CENTER,
@@ -252,9 +248,8 @@ class Send(Box):
         self.amount_input = TextInput(
             placeholder="0.00000000",
             style=Pack(
-                color = BLACK,
                 text_align= CENTER,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 flex = 1,
@@ -285,7 +280,7 @@ class Send(Box):
             text="",
             style=Pack(
                 color = RED,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 text_align = LEFT,
@@ -299,8 +294,7 @@ class Send(Box):
             text="Split",
             value=True,
             style=Pack(
-                color = BLACK,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 10
             ),
@@ -311,8 +305,7 @@ class Send(Box):
         self.each_option = Switch(
             text="Each",
             style=Pack(
-                color = GRAY,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 10,
                 padding_left = 20
@@ -325,7 +318,7 @@ class Send(Box):
         self.amount_options_switch = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 height = 30,
                 alignment = CENTER
             )
@@ -333,7 +326,7 @@ class Send(Box):
         self.amount_options_box = Box(
             style=Pack(
                 direction = COLUMN,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding=(0,5,0,5),
                 height = 30,
                 alignment = CENTER
@@ -343,7 +336,7 @@ class Send(Box):
         self.amount_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding = (5,5,0,5),
                 height = 50
             )
@@ -352,8 +345,8 @@ class Send(Box):
         self.fees_label = Label(
             text="Fee :",
             style=Pack(
-                color = BLACK,
-                background_color = rgb(230,230,230),
+                color = GRAY,
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 text_align = CENTER,
@@ -364,9 +357,8 @@ class Send(Box):
         self.fee_input = TextInput(
             placeholder="0.00000000",
             style=Pack(
-                color = BLACK,
                 text_align= CENTER,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 flex = 1,
@@ -391,14 +383,14 @@ class Send(Box):
 
         self.empty_box = Box(
             style=Pack(
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 flex = 5
             )
         )
         self.fees_box = Box(
            style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding = (5,5,0,5),
                 height = 50
             ) 
@@ -416,7 +408,7 @@ class Send(Box):
             style=Pack(
                 color = GRAY,
                 text_align= LEFT,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11
             )
@@ -425,9 +417,8 @@ class Send(Box):
         self.operation_status = Label(
             text="",
             style=Pack(
-                color = BLACK,
                 text_align= LEFT,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 font_weight = BOLD,
                 font_size = 11,
                 padding_left = 5
@@ -444,7 +435,7 @@ class Send(Box):
         self.send_box = Box(
             style=Pack(
                 direction = COLUMN,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 flex = 1
             )
         )
@@ -452,7 +443,6 @@ class Send(Box):
         self.send_button = Button(
             text="Cash Out",
             style=Pack(
-                color = BLACK,
                 font_weight = BOLD,
                 font_size = 12,
                 width = 120,
@@ -464,7 +454,7 @@ class Send(Box):
         self.confirmation_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = rgb(230,230,230),
+                background_color = panel_color,
                 padding = 5,
                 alignment = CENTER,
                 height = 55
@@ -681,12 +671,12 @@ class Send(Box):
     def clear_buttons(self):
         if self.transparent_toggle:
             self.transparent_button.style.color = GRAY
-            self.transparent_button.style.background_color = WHITE
+            self.transparent_button.style.background_color = TRANSPARENT
             self.transparent_toggle = None
 
         elif self.private_toggle:
             self.transparent_button.style.color = GRAY
-            self.private_button.style.background_color = WHITE
+            self.private_button.style.background_color = TRANSPARENT
             self.private_toggle = None
 
 
@@ -706,11 +696,12 @@ class Send(Box):
     async def get_private_addresses(self):
         addresses_data, _ = await self.commands.z_listAddresses()
         addresses_data = json.loads(addresses_data)
-        if addresses_data is not None:
-            if len(addresses_data) == 1:
-                address_items = [(addresses_data[0], addresses_data[0])]
+        if addresses_data:
+            message_address = self.storage.get_identity("address")
+            if message_address:
+                address_items = [address_info for address_info in addresses_data if address_info != message_address[0]]
             else:
-                address_items = [(address, address) for address in addresses_data]
+                address_items = [address_info for address_info in addresses_data]
         else:
             address_items = []
         return address_items
@@ -729,12 +720,9 @@ class Send(Box):
                 self.update_fees_option(True)
             balance, _ = await self.commands.z_getBalance(selected_address)
             if balance:
-                if float(balance) <= 0:
-                    self.address_balance.style.color = GRAY
-                else:
-                    self.address_balance.style.color = BLACK
                 format_balance = self.utils.format_balance(float(balance))
                 self.address_balance.text = format_balance
+
         elif selected_address == "Main Account":
             self.single_option.value = True
             self.single_option.enabled = False
@@ -744,10 +732,6 @@ class Send(Box):
             if total_balances:
                 balances = json.loads(total_balances)
                 transparent = balances.get('transparent')
-                if float(transparent) <= 0:
-                    self.address_balance.style.color = GRAY
-                else:
-                    self.address_balance.style.color = BLACK
                 format_balance = self.utils.format_balance(float(transparent))
                 self.address_balance.text = format_balance
         else:
@@ -757,7 +741,6 @@ class Send(Box):
     def single_option_on_change(self, switch):
         if switch.value is True:
             self.many_option.value = False
-            self.single_option.style.color = BLACK
             self.destination_box.insert(1, self.destination_input_single)
             self.destination_input_single.readonly = False
             self.update_fees_option(True)
@@ -765,7 +748,6 @@ class Send(Box):
         else:
             if self.many_option.value is True:
                 self.single_option.value = False
-                self.single_option.style.color = GRAY
                 self.destination_box.remove(
                     self.destination_input_single
                 )
@@ -775,7 +757,6 @@ class Send(Box):
     def many_option_on_change(self, switch):
         if switch.value is True:
             self.single_option.value = False
-            self.many_option.style.color = BLACK
             self.destination_box.style.height = 100
             self.destination_box.insert(1, self.destination_input_many)
             self.insert(5, self.amount_options_box)
@@ -784,7 +765,6 @@ class Send(Box):
         else:
             if self.single_option.value is True:
                 self.many_option.value = False
-                self.many_option.style.color = GRAY
                 self.destination_box.style.height = 55
                 self.destination_box.remove(
                     self.destination_input_many
@@ -797,22 +777,18 @@ class Send(Box):
     def split_option_on_change(self, switch):
         if switch.value is True:
             self.each_option.value = False
-            self.split_option.style.color = BLACK
         else:
             if self.each_option.value is True:
                 self.split_option.value = False
-                self.split_option.style.color = GRAY
             else:
                 self.split_option.value = True
 
     def each_option_on_change(self, switch):
         if switch.value is True:
             self.split_option.value = False
-            self.each_option.style.color = BLACK
         else:
             if self.split_option.value is True:
                 self.each_option.value = False
-                self.each_option.style.color = GRAY
             else:
                 self.each_option.value = True
 
@@ -1125,3 +1101,39 @@ class Send(Box):
         self.amount_input.readonly = False
         self.fee_input.readonly = False
         self.operation_status.text = ""
+
+
+    def update_send_mode(self, widegt):
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+        self.from_address_label.style.background_color = panel_color
+        self.address_balance.style.background_color = panel_color
+        self.selection_address_box.style.background_color = panel_color
+        self.single_option.style.background_color = panel_color
+        self.many_option.style.background_color = panel_color
+        self.send_options_switch.style.background_color = panel_color
+        self.send_options_box.style.background_color = panel_color
+        self.destination_label.style.background_color = panel_color
+        self.destination_input_single.style.background_color = panel_color
+        self.is_valid.style.background_color = panel_color
+        self.is_valid_box.style.background_color = panel_color
+        self.destination_box.style.background_color = panel_color
+        self.amount_label.style.background_color = panel_color
+        self.amount_input.style.background_color = panel_color
+        self.check_amount_label.style.background_color = panel_color
+        self.split_option.style.background_color = panel_color
+        self.each_option.style.background_color = panel_color
+        self.amount_options_switch.style.background_color = panel_color
+        self.amount_options_box.style.background_color = panel_color
+        self.amount_box.style.background_color = panel_color
+        self.fees_label.style.background_color = panel_color
+        self.fee_input.style.background_color = panel_color
+        self.empty_box.style.background_color = panel_color
+        self.fees_box.style.background_color = panel_color
+        self.operation_label.style.background_color = panel_color
+        self.operation_status.style.background_color = panel_color
+        self.send_box.style.background_color = panel_color
+        self.confirmation_box.style.background_color = panel_color

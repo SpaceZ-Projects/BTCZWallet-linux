@@ -19,9 +19,8 @@ from .utils import Utils
 class Txid(Window):
     def __init__(self, transactions, txid):
         super().__init__(
-            size =(600, 150),
+            size =(700, 150),
             resizable= False,
-            minimizable = False,
             closable=False,
             on_close=self.close_transaction_info
         )
@@ -58,8 +57,7 @@ class Txid(Window):
             text=self.txid,
             style=Pack(
                 font_weight = BOLD,
-                text_align = CENTER,
-                color = BLACK
+                text_align = CENTER
             )
         )
         self.txid_box = Box(
@@ -84,7 +82,6 @@ class Txid(Window):
             style=Pack(
                 font_weight = BOLD,
                 text_align = LEFT,
-                color = BLACK,
                 flex = 1
             )
         )
@@ -110,7 +107,6 @@ class Txid(Window):
             style=Pack(
                 font_weight = BOLD,
                 text_align = LEFT,
-                color = BLACK,
                 flex = 1
             )
         )
@@ -136,7 +132,6 @@ class Txid(Window):
             style=Pack(
                 font_weight = BOLD,
                 text_align = LEFT,
-                color = BLACK,
                 flex = 1
             )
         )
@@ -393,13 +388,15 @@ class Transactions(Box):
                         }
                         self.transactions_data.insert(0, row)
                         self.add_transaction(0, row)
-                        notify = NotifyGtk(
-                            title="New Transaction",
-                            duration=10,
-                            message=f"{txid}",
-                            app=self.app
-                        )
-                        notify.popup()
+                        try:
+                            notify = NotifyGtk(
+                                title=f"[{category}] : {amount} BTCZ",
+                                message=f"Txid : {txid}",
+                                duration=10
+                            )
+                            notify.popup()
+                        except Exception:
+                            pass
             await asyncio.sleep(5)
 
 

@@ -39,7 +39,6 @@ class BTCZSetup(Box):
         self.status_label = Label(
             text="Verify binary files...",
             style=Pack(
-                color = BLACK,
                 font_size = 10,
                 font_weight = BOLD,
                 text_align = CENTER,
@@ -50,7 +49,6 @@ class BTCZSetup(Box):
         self.status_box = Box(
             style=Pack(
                 direction=ROW,
-                background_color = rgb(230,230,230),
                 flex = 7
             )
         )
@@ -100,7 +98,6 @@ class BTCZSetup(Box):
             text="",
             style=Pack(
                 text_align = LEFT,
-                color = BLACK,
                 font_weight = BOLD,
                 padding_top = 1,
                 font_size = 9
@@ -120,7 +117,6 @@ class BTCZSetup(Box):
             text="",
             style=Pack(
                 text_align = LEFT,
-                color = BLACK,
                 font_weight = BOLD,
                 font_size = 9
             )
@@ -140,7 +136,6 @@ class BTCZSetup(Box):
             text="",
             style=Pack(
                 text_align = RIGHT,
-                color = BLACK,
                 font_weight = BOLD,
                 padding_right = 3,
                 font_size = 9
@@ -161,7 +156,6 @@ class BTCZSetup(Box):
             text="",
             style=Pack(
                 text_align = RIGHT,
-                color = BLACK,
                 font_weight = BOLD,
                 padding = (1,3,0,0),
                 font_size = 9

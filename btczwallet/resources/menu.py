@@ -5,8 +5,9 @@ import webbrowser
 from toga import (
     MainWindow, Box, Button
 )
+from ..framework import Gtk
 from toga.style.pack import Pack
-from toga.colors import WHITE, YELLOW, BLACK, GRAY
+from toga.colors import YELLOW, BLACK, GRAY, TRANSPARENT
 from toga.constants import (
     COLUMN, ROW, TOP, CENTER, BOLD
 )
@@ -34,13 +35,12 @@ class Menu(MainWindow):
         self.statusbar = AppStatusBar(self.app)
 
         self.title = "BitcoinZ Wallet"
-        self.size = (900,600)
-        
-        self._is_minimized = None
-        
+        self.size = (900,640)
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
         self.on_close = self.exit_app
+
+        Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.on_change_mode)
 
         self.main_box = Box(
             style=Pack(
@@ -69,6 +69,7 @@ class Menu(MainWindow):
         self.transactions_page = Transactions(self.app, self)
         self.recieve_page = Recieve(self.app, self)
         self.send_page = Send(self.app, self)
+        self.messages_page = Messages(self.app, self)
         self.mining_page = Mining(self.app, self)
 
         self.main_box.add(
@@ -172,9 +173,14 @@ class Menu(MainWindow):
         await asyncio.sleep(0.5)
         self.home_button_click(None)
         self.add_actions_cmds()
-        self.statusicon = Notify(self.app)
-        self.statusicon.show()
+        try:
+            self.statusicon = Notify(self.app, self.home_page, self.mining_page)
+            self.statusicon.show()
+        except Exception:
+            pass
         self.app.add_background_task(self.transactions_page.update_transactions)
+        await asyncio.sleep(1)
+        await self.messages_page.gather_unread_memos()
 
 
     def add_actions_cmds(self):
@@ -287,6 +293,8 @@ class Menu(MainWindow):
         self.message_button.style.color = BLACK
         self.message_button.style.background_color = YELLOW
         self.message_button.on_press = None
+        self.pages.add(self.messages_page)
+        self.app.add_background_task(self.messages_page.insert_widgets)
 
 
     def mining_button_click(self, button):
@@ -304,47 +312,63 @@ class Menu(MainWindow):
             self.home_button_toggle = None
             self.pages.remove(self.home_page)
             self.home_button.style.color = GRAY
-            self.home_button.style.background_color = WHITE
+            self.home_button.style.background_color = TRANSPARENT
             self.home_button.on_press = self.home_button_click
 
         elif self.transactions_button_toggle:
             self.transactions_button_toggle = None
             self.pages.remove(self.transactions_page)
             self.transactions_button.style.color = GRAY
-            self.transactions_button.style.background_color = WHITE
+            self.transactions_button.style.background_color = TRANSPARENT
             self.transactions_button.on_press = self.transactions_button_click
 
         elif self.recieve_button_toggle:
             self.recieve_button_toggle = None
             self.pages.remove(self.recieve_page)
             self.recieve_button.style.color = GRAY
-            self.recieve_button.style.background_color = WHITE
+            self.recieve_button.style.background_color = TRANSPARENT
             self.recieve_button.on_press = self.recieve_button_click
         
         elif self.send_button_toggle:
             self.send_button_toggle = None
             self.pages.remove(self.send_page)
             self.send_button.style.color = GRAY
-            self.send_button.style.background_color = WHITE
+            self.send_button.style.background_color = TRANSPARENT
             self.send_button.on_press = self.send_button_click
 
         elif self.message_button_toggle:
             self.message_button_toggle = None
+            self.pages.remove(self.messages_page)
             self.message_button.style.color = GRAY
-            self.message_button.style.background_color = WHITE
+            self.message_button.style.background_color = TRANSPARENT
             self.message_button.on_press = self.message_button_click
 
         elif self.mining_button_toggle:
             self.mining_button_toggle = None
             self.pages.remove(self.mining_page)
             self.mining_button.style.color = GRAY
-            self.mining_button.style.background_color = WHITE
+            self.mining_button.style.background_color = TRANSPARENT
             self.mining_button.on_press = self.mining_button_click
+
+
+    def on_change_mode(self, settings, param_spec):
+        self.app.add_background_task(self.wallet.update_wallet_mode)
+        self.app.add_background_task(self.home_page.update_home_mode)
+        self.app.add_background_task(self.recieve_page.update_recieve_mode)
+        self.app.add_background_task(self.send_page.update_send_mode)
+        self.app.add_background_task(self.messages_page.update_messages_mode)
+        self.app.add_background_task(self.mining_page.update_mining_mode)
             
 
     async def stop_node_exit(self, action):
+        if self.mining_page.mining_status:
+            return
+        self.home_page.clear_cache()
         await self.commands.stopNode()
         self.app.exit()
 
     def exit_app(self, action):
+        if self.mining_page.mining_status:
+            return
+        self.home_page.clear_cache()
         self.app.exit()
