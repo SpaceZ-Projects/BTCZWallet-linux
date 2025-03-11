@@ -5,7 +5,7 @@ import webbrowser
 from toga import (
     MainWindow, Box, Button
 )
-from ..framework import Gtk
+from ..framework import Gtk, is_wsl
 from toga.style.pack import Pack
 from toga.colors import YELLOW, BLACK, GRAY, TRANSPARENT
 from toga.constants import (
@@ -23,7 +23,9 @@ from .messages import Messages
 from .mining import Mining
 from .status import AppStatusBar
 from .toolbar import AppToolbar
-from .notify import Notify
+
+if not is_wsl():
+    from .notify import Notify
 
 class Menu(MainWindow):
     def __init__(self):

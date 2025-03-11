@@ -1,14 +1,13 @@
 
 import os
 import threading
+import platform
 
 from typing import Optional, Callable
 
-from toga import App
 import gi
 gi.require_version("Gtk", "3.0")
-gi.require_version('Notify', '0.7')
-from gi.repository import Gtk, Gdk, Notify
+from gi.repository import Gtk, Gdk
 
 
 def get_app_path():
@@ -16,6 +15,24 @@ def get_app_path():
     app_path = os.path.dirname(script_path)
     return app_path
 
+
+def is_wsl():
+    try:
+        with open("/proc/version", "r") as f:
+            version = f.read()
+            if "Microsoft" in version or "WSL" in version:
+                return True
+    except FileNotFoundError:
+        pass
+    if platform.uname().release.lower().find('microsoft') != -1:
+        return True
+    return False
+
+
+if not is_wsl():
+    gi.require_version('Notify', '0.7')
+    from gi.repository import Notify
+    
 
 class ClipBoard:
     def __init__(self):

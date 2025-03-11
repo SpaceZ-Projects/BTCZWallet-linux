@@ -7,13 +7,16 @@ import webbrowser
 import time
 
 from toga import App, Box, Label, Window, Button, Table
-from ..framework import Gtk, Gdk, ClipBoard, NotifyGtk
+from ..framework import Gtk, Gdk, ClipBoard, is_wsl
 from toga.style.pack import Pack
 from toga.colors import GRAY, GREEN, RED, ORANGE, BLACK
 from toga.constants import COLUMN, CENTER, BOLD, ROW, LEFT
 
 from .client import Client
 from .utils import Utils
+
+if not is_wsl():
+    from ..framework import NotifyGtk
 
 
 class Txid(Window):

@@ -1,1 +1,1 @@
-from .objectz import Gtk, Gdk, ClipBoard, StatusBar, NotifyGtk, StatusIconGtk
+from .objectz import Gtk, Gdk, ClipBoard, StatusBar, is_wsl, NotifyGtk, StatusIconGtk
