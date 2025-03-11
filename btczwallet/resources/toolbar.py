@@ -54,9 +54,20 @@ class AppToolbar():
             order=1
         )
 
+        self.messages_menu = Group(
+            text="Messages",
+            order=2
+        )
+
+        self.edit_username_cmd = Command(
+            text="Edit username",
+            group=self.messages_menu,
+            action=True
+        )
+
         self.help_menu = Group(
             text="Help",
-            order=2
+            order=3
         )
 
         self.check_update_cmd = Command(
@@ -71,6 +82,7 @@ class AppToolbar():
             self.stop_exit_cmd,
             self.generate_t_cmd,
             self.generate_z_cmd,
+            self.edit_username_cmd,
             self.check_update_cmd
         )
 

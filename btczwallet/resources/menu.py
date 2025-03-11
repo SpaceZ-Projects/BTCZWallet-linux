@@ -19,10 +19,11 @@ from .home import Home
 from .txs import Transactions
 from .recieve import Recieve
 from .send import Send
-from .messages import Messages
+from .messages import Messages, EditUser
 from .mining import Mining
 from .status import AppStatusBar
 from .toolbar import AppToolbar
+from .storage import Storage
 
 if not is_wsl():
     from .notify import Notify
@@ -33,6 +34,7 @@ class Menu(MainWindow):
 
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
+        self.storage = Storage(self.app)
         self.wallet = Wallet(self.app)
         self.statusbar = AppStatusBar(self.app)
 
@@ -43,6 +45,8 @@ class Menu(MainWindow):
         self.on_close = self.exit_app
 
         Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.on_change_mode)
+
+        self.edit_user_toggle = None
 
         self.main_box = Box(
             style=Pack(
@@ -192,6 +196,7 @@ class Menu(MainWindow):
         self.apptoolbar.stop_exit_cmd.action = self.stop_node_exit
         self.apptoolbar.generate_t_cmd.action = self.generate_transparent_address
         self.apptoolbar.generate_z_cmd.action = self.generate_private_address
+        self.apptoolbar.edit_username_cmd.action = self.edit_messages_username
         self.apptoolbar.check_update_cmd.action = self.check_app_version
 
 
@@ -228,6 +233,9 @@ class Menu(MainWindow):
 
 
     async def check_app_version(self, widget):
+        def on_result(widget, result):
+            if result is True:
+                webbrowser.open(self.git_link)
         git_version, link = await self.utils.get_repo_info()
         if git_version:
             self.git_link = link
@@ -241,12 +249,26 @@ class Menu(MainWindow):
                 self.question_dialog(
                     title="Check updates",
                     message=f"Current version: {current_version}\nGit version: {git_version}\nWould you like to update the app ?",
-                    on_result=self.update_app_result
+                    on_result=on_result
                 )
 
-    def update_app_result(self, widget, result):
-        if result is True:
-            webbrowser.open(self.git_link)
+
+    def edit_messages_username(self, action):
+        if not self.edit_user_toggle:
+            data = self.storage.is_exists()
+            if data:
+                username = self.storage.get_identity("username")
+                if username:
+                    self.edit_window = EditUser(username[0], self)
+                    self.edit_window.on_close = self.close_edit_username
+                    self.edit_window.close_button.on_press = self.close_edit_username
+                    self.edit_window.show()
+                    self.edit_user_toggle = True
+
+    
+    def close_edit_username(self, button):
+        self.edit_user_toggle = None
+        self.edit_window.close()
 
 
     def home_button_click(self, button):
