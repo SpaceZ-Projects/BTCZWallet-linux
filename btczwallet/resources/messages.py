@@ -23,6 +23,133 @@ if not is_wsl():
 
 
 
+class EditUser(Window):
+    def __init__(self, username, main:Window):
+        super().__init__(
+            size = (500, 150),
+            resizable= False
+        )
+
+        self.utils = Utils(self.app)
+        self.storage = Storage(self.app)
+        self.username = username
+        self.main = main
+
+        self.title = "Edit Username"
+        position_center = self.utils.windows_screen_center(self.size)
+        self.position = position_center
+
+        self.main_box = Box(
+            style=Pack(
+                direction = COLUMN,
+                flex = 1,
+                alignment = CENTER
+            )
+        )
+        self.info_label = Label(
+            text="Edit your messages username",
+            style=Pack(
+                text_align = CENTER,
+                font_weight = BOLD,
+                font_size = 12,
+                padding_top = 5
+            )
+        )
+        self.username_label = Label(
+            text="Username :",
+            style=Pack(
+                color = GRAY,
+                font_size = 12,
+                font_weight = BOLD,
+                padding= (5,5,0,0)
+            )
+        )
+        self.username_input = TextInput(
+            value=self.username,
+            placeholder="required",
+            style=Pack(
+                text_align = CENTER,
+                font_size = 12,
+                font_weight = BOLD,
+                width = 250
+            )
+        )
+        self.username_box = Box(
+            style=Pack(
+                direction = ROW,
+                flex = 1,
+                padding_top = 15
+            )
+        )
+
+        self.confirm_button = Button(
+            text="Confirm",
+            style=Pack(
+                alignment = CENTER,
+                padding_bottom = 10,
+                padding_left = 10
+            ),
+            on_press=self.verify_username
+        )
+
+        self.close_button = Button(
+            text="Close",
+            style=Pack(
+                alignment = CENTER,
+                padding_bottom = 10,
+                padding_right = 10
+            )
+        )
+
+        self.buttons_box = Box(
+            style=Pack(
+                direction = ROW,
+                alignment =CENTER
+            )
+        )
+        self.content = self.main_box
+
+        self.main_box.add(
+            self.info_label,
+            self.username_box,
+            self.buttons_box
+        )
+        self.username_box.add(
+            self.username_label,
+            self.username_input
+        )
+        self.buttons_box.add(
+            self.close_button,
+            self.confirm_button
+        )
+
+    async def verify_username(self, button):
+        def on_result(widget, result):
+            if result is None:
+                self.main.edit_user_toggle = None
+                self.close()
+        if not self.username_input.value:
+            self.error_dialog(
+                title="Missing Username",
+                message="The username is required for messages address."
+            )
+            return
+        if self.username_input.value == self.username:
+            self.error_dialog(
+                title="Duplicate Username",
+                message="The username you entered is the same as your current username."
+            )
+            return
+        username = self.username_input.value
+        self.storage.edit_username(self.username, username)
+        self.info_dialog(
+            title="Updated Successfully",
+            message="Your username has been successfully updated.",
+            on_result=on_result
+        )
+
+
+
 class Indentifier(Window):
     def __init__(self, messages_page:Box, main:Window, chat:Box):
         super().__init__(
@@ -393,7 +520,10 @@ class Contact(Box):
         self.contact_context_menu = Gtk.Menu()
         copy_address_item = Gtk.MenuItem(label="Copy address")
         copy_address_item.connect("activate", self.copy_address)
+        ban_address_item = Gtk.MenuItem(label="Ban contact")
+        ban_address_item.connect("activate", self.ban_address)
         self.contact_context_menu.append(copy_address_item)
+        self.contact_context_menu.append(ban_address_item)
         self.contact_context_menu.show_all()
 
         self.app.add_background_task(self.update_contact)
@@ -411,6 +541,30 @@ class Contact(Box):
         self.main.info_dialog(
             title="Copied",
             message="The address has copied to clipboard.",
+        )
+
+
+    def ban_address(self, context):
+        def on_result(widget, result):
+            if result is True:
+                self.storage.ban(self.address)
+                self.storage.delete_contact(self.address)
+                self.chat.contacts_box.remove(self)
+                self.main.info_dialog(
+                    title="Contact Banned",
+                    message=f"The contact has been successfully banned and deleted:\n\n"
+                            f"- Username: {self.username}\n"
+                            f"- User ID: {self.contact_id}\n"
+                            f"- Address: {self.address}"
+                )
+
+        self.main.question_dialog(
+            title="Ban Contact",
+            message=f"Are you sure you want to ban and delete this contact?\n\n"
+                    f"- Username: {self.username}\n"
+                    f"- User ID: {self.contact_id}\n"
+                    f"- Address: {self.address}",
+            on_result=on_result
         )
 
 
@@ -625,6 +779,9 @@ class NewContact(Window):
 
 
     async def send_memo(self, address, toaddress, amount, txfee, memo, id):
+        def on_result(widget, result):
+            if result is None:
+                self.close()
         operation, _= await self.commands.SendMemo(address, toaddress, amount, txfee, memo)
         if operation:
             transaction_status, _= await self.commands.z_getOperationStatus(operation)
@@ -641,10 +798,10 @@ class NewContact(Window):
                             txid = result.get('txid')
                             self.storage.tx(txid)
                             self.storage.add_request(id, toaddress)
-                            self.enable_window()
                             self.info_dialog(
                                 title="Request sent",
-                                message="The request has been sent successfully to the address."
+                                message="The request has been sent successfully to the address.",
+                                on_result=on_result
                             )
                             return
                         await asyncio.sleep(3)
@@ -660,7 +817,6 @@ class NewContact(Window):
         self.confirm_button.enabled = False
 
     def enable_window(self):
-        self.address_input.value = ""
         self.address_input.readonly = False
         self.close_button.enabled = True
         self.confirm_button.enabled = True
@@ -950,11 +1106,15 @@ class Chat(Box):
         self.clipboard = ClipBoard()
         
         self.contact_id = None
-        self.new_contact_toggle = None
-        self.pending_toggle = None
-        self.new_pending_toggle = None
+        self.user_address = None
         self.selected_contact_toggle = None
+        self.pending_toggle = None
+        self.new_contact_toggle = None
+        self.new_pending_toggle = None
         self.scroll_toggle = None
+        self.unread_messages_toggle = None
+        self.last_message_timestamp = None
+        self.last_unread_timestamp = None
         self.processed_timestamps = set()
 
         mode = self.utils.get_sys_mode()
@@ -1092,7 +1252,6 @@ class Chat(Box):
             style=Pack(
                 font_size = 10,
                 font_weight = BOLD,
-                background_color = panel_color,
                 padding_bottom = 2,
                 text_align = CENTER
             )
@@ -1127,8 +1286,7 @@ class Chat(Box):
         self.send_box = Box(
             style=Pack(
                 direction = ROW,
-                alignment = BOTTOM,
-                background_color = panel_color
+                alignment = BOTTOM
             )
         )
 
@@ -1755,18 +1913,19 @@ class Chat(Box):
         amount = float(fee) - 0.0001
         txfee = 0.0001
         timestamp = await self.get_message_timestamp()
-        memo = {"type":"message","id":id[0],"username":username,"text":message, "timestamp":timestamp}
-        memo_str = json.dumps(memo)
-        self.disable_send_button()
-        await self.send_memo(
-            address,
-            amount,
-            txfee,
-            memo_str,
-            author,
-            message,
-            timestamp
-        )
+        if timestamp is not None:
+            memo = {"type":"message","id":id[0],"username":username,"text":message, "timestamp":timestamp}
+            memo_str = json.dumps(memo)
+            self.disable_send_button()
+            await self.send_memo(
+                address,
+                amount,
+                txfee,
+                memo_str,
+                author,
+                message,
+                timestamp
+            )
 
 
     async def send_memo(self, address, amount, txfee, memo, author, text, timestamp):
@@ -1994,6 +2153,7 @@ class Messages(Box):
         if id not in contacts_ids:
             return
         self.storage.unread_message(id, author, message, amount, timestamp)
+        self.chat.processed_timestamps.add(timestamp)
 
 
     async def get_request(self, form):
@@ -2032,3 +2192,4 @@ class Messages(Box):
         self.chat.address_balance.style.background_color = panel_color
         self.chat.contact_info_box.style.background_color = panel_color
         self.chat.input_box.style.background_color = panel_color
+        self.chat.options_box.style.background_color = panel_color
