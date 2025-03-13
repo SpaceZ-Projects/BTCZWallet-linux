@@ -257,6 +257,8 @@ class Transactions(Box):
             )
         )
         transactions_table_widgets = self.transactions_table._impl.native.get_child()
+        v_adjustment = transactions_table_widgets.get_vadjustment()
+        v_adjustment.connect("value-changed", self.on_scroll_table)
         transactions_table_widgets.connect("button-press-event", self.transactions_table_context_event)
         self.transactions_table_context_menu = Gtk.Menu()
         copy_address_item = Gtk.MenuItem(label="Copy address")
@@ -329,6 +331,14 @@ class Transactions(Box):
         txid = self.transactions_table.selection.txid
         transaction_url = url + txid
         webbrowser.open(transaction_url)
+
+
+    def on_scroll_table(self, adjustment):
+        vertical_position = adjustment.get_value()
+        max_value = adjustment.get_upper() - adjustment.get_page_size()
+        if vertical_position >= max_value:
+            self.transactions_from += 50
+            self.app.add_background_task(self.get_transactions_archive)
 
 
     def transactions_table_double_click(self, widget, event):
