@@ -198,6 +198,7 @@ class Menu(MainWindow):
         self.apptoolbar.generate_z_cmd.action = self.generate_private_address
         self.apptoolbar.edit_username_cmd.action = self.edit_messages_username
         self.apptoolbar.check_update_cmd.action = self.check_app_version
+        self.apptoolbar.join_us_cmd.action = self.join_us
 
 
     async def generate_transparent_address(self, action):
@@ -269,6 +270,11 @@ class Menu(MainWindow):
     def close_edit_username(self, button):
         self.edit_user_toggle = None
         self.edit_window.close()
+
+
+    def join_us(self, action):
+        discord = "https://discord.com/invite/aAU2WeJ"
+        webbrowser.open(discord)
 
 
     def home_button_click(self, button):

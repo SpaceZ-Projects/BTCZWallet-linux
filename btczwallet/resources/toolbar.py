@@ -14,18 +14,21 @@ class AppToolbar():
         self.about_cmd = Command(
             text="About",
             group=self.app_menu,
+            order=0,
             action=self.display_about_dialog
         )
 
         self.exit_cmd = Command(
             text="Exit",
             group=self.app_menu,
+            order=1,
             action=True
         )
 
         self.stop_exit_cmd = Command(
             text="Stop node",
             group=self.app_menu,
+            order=2,
             action=True
         )
 
@@ -71,8 +74,16 @@ class AppToolbar():
         )
 
         self.check_update_cmd = Command(
-            text="Check Update",
+            text="Check update",
             group=self.help_menu,
+            order=0,
+            action=True
+        )
+
+        self.join_us_cmd = Command(
+            text="Join us",
+            group=self.help_menu,
+            order=1,
             action=True
         )
 
@@ -83,7 +94,8 @@ class AppToolbar():
             self.generate_t_cmd,
             self.generate_z_cmd,
             self.edit_username_cmd,
-            self.check_update_cmd
+            self.check_update_cmd,
+            self.join_us_cmd
         )
 
 
