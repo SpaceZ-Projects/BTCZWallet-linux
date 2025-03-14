@@ -5,7 +5,7 @@ import webbrowser
 
 from toga import (
     App, Box, Label, ImageView, Window,
-    Button, Table
+    Button, Table, TextInput
 )
 from ..framework import ClipBoard
 from toga.style.pack import Pack
@@ -15,6 +15,128 @@ from toga.colors import rgb, GRAY, BLACK, YELLOW, TRANSPARENT
 from .utils import Utils
 from .client import Client
 from .storage import Storage
+
+
+
+class ImportKey(Window):
+    def __init__(self):
+        super().__init__(
+            size = (600, 150),
+            resizable= False,
+            closable=False
+        )
+        
+        self.utils = Utils(self.app)
+        self.commands = Client(self.app)
+
+        self.title = "Import Key"
+        position_center = self.utils.windows_screen_center(self.size)
+        self.position = position_center
+
+        self.main_box = Box(
+            style=Pack(
+                direction = COLUMN,
+                flex = 1,
+                alignment = CENTER
+            )
+        )
+
+        self.info_label = Label(
+            text="Please enter your private key for transparent or private addresses.\n(This operation may take up to 10 minutes to complete.)",
+            style=Pack(
+                text_align = CENTER,
+                font_weight = BOLD,
+                font_size = 11,
+                padding_top = 5
+            )
+        )
+        self.key_input = TextInput(
+            style=Pack(
+                text_align= CENTER,
+                font_weight = BOLD,
+                font_size = 12,
+                flex = 3,
+                padding_left = 10
+            )
+        )
+        
+        self.import_button = Button(
+            text="Import",
+            style=Pack(
+                alignment = CENTER,
+                font_weight = BOLD,
+                padding = (0,10,0,10)
+            ),
+            on_press=self.import_button_click
+        )
+
+        self.input_box = Box(
+            style=Pack(
+                direction = ROW,
+                flex = 1,
+                alignment = CENTER,
+                padding = (10,0,10,0)
+            )
+        )
+
+        self.close_button = Button(
+            text="Close",
+            style=Pack(
+                alignment = CENTER,
+                font_weight = BOLD,
+                padding_bottom = 10,
+                width =100
+            )
+        )
+
+        self.content = self.main_box
+
+        self.main_box.add(
+            self.info_label,
+            self.input_box,
+            self.close_button
+        )
+        self.input_box.add(
+            self.key_input,
+            self.import_button
+        )
+
+    def import_button_click(self, button):
+        if not self.key_input.value:
+            self.error_dialog(
+                "Missing Private Key",
+                "Please enter a private key to proceed."
+            )
+            self.key_input.focus()
+            return
+        self.key_input.readonly = True
+        self.import_button.enabled = False
+        self.close_button.enabled = False
+        self.app.add_background_task(self.import_private_key)
+
+
+    async def import_private_key(self, widget):
+        key = self.key_input.value
+        result, _= await self.commands.ImportPrivKey(key)
+        if result is not None:
+            pass
+        else:
+            result, _= await self.commands.z_ImportKey(key)
+            if result is not None:
+                pass
+            else:
+                self.error_dialog(
+                    "Invalid Private Key",
+                    "The private key you entered is not valid. Please check the format and try again."
+                )
+        self.update_import_window()
+
+
+    def update_import_window(self):
+        self.key_input.readonly = False
+        self.key_input.value = ""
+        self.import_button.enabled = True
+        self.close_button.enabled = True
 
 
 class Recieve(Box):

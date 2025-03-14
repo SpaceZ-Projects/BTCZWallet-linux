@@ -57,6 +57,13 @@ class AppToolbar():
             order=1
         )
 
+        self.import_key_cmd = Command(
+            text="Import private key",
+            group=self.wallet_menu,
+            order=1,
+            action=True
+        )
+
         self.messages_menu = Group(
             text="Messages",
             order=2
@@ -101,6 +108,7 @@ class AppToolbar():
             self.stop_exit_cmd,
             self.generate_t_cmd,
             self.generate_z_cmd,
+            self.import_key_cmd,
             self.edit_username_cmd,
             self.backup_messages_cmd,
             self.check_update_cmd,

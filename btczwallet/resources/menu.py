@@ -18,7 +18,7 @@ from .utils import Utils
 from .wallet import Wallet
 from .home import Home
 from .txs import Transactions
-from .recieve import Recieve
+from .recieve import Recieve, ImportKey
 from .send import Send
 from .messages import Messages, EditUser
 from .mining import Mining
@@ -46,7 +46,8 @@ class Menu(MainWindow):
         self.on_close = self.exit_app
 
         Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.on_change_mode)
-
+        
+        self.import_key_toggle = None
         self.edit_user_toggle = None
 
         self.main_box = Box(
@@ -197,6 +198,7 @@ class Menu(MainWindow):
         self.apptoolbar.stop_exit_cmd.action = self.stop_node_exit
         self.apptoolbar.generate_t_cmd.action = self.generate_transparent_address
         self.apptoolbar.generate_z_cmd.action = self.generate_private_address
+        self.apptoolbar.import_key_cmd.action = self.show_import_key
         self.apptoolbar.edit_username_cmd.action = self.edit_messages_username
         self.apptoolbar.backup_messages_cmd.action = self.backup_messages
         self.apptoolbar.check_update_cmd.action = self.check_app_version
@@ -254,6 +256,20 @@ class Menu(MainWindow):
                     message=f"Current version: {current_version}\nGit version: {git_version}\nWould you like to update the app ?",
                     on_result=on_result
                 )
+
+
+    def show_import_key(self, action):
+        if not self.import_key_toggle:
+            self.import_window = ImportKey()
+            self.import_window.on_close = self.close_import_key
+            self.import_window.close_button.on_press = self.close_import_key
+            self.import_window.show()
+            self.import_key_toggle = True
+
+
+    def close_import_key(self, button):
+        self.import_key_toggle = None
+        self.import_window.close()
 
 
     def edit_messages_username(self, action):
