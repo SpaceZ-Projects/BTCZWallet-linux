@@ -426,6 +426,8 @@ class Message(Box):
                 flex = 1
             )
         )
+        message_value = self.message_value._impl.native.get_child()
+        message_value.set_left_margin(5)
 
         self.message_box = Box(
             style=Pack(
@@ -597,6 +599,21 @@ class Contact(Box):
             else:
                 self.unread_messages.text = ""
             await asyncio.sleep(3)
+
+
+    def update_contact_mode(self, wdiget):
+        mode = self.utils.get_sys_mode()
+        if mode:
+            if self.category == "individual":
+                image_path = "images/individual_w.png"
+            elif self.category == "group":
+                image_path = "images/group_w.png"
+        else:
+            if self.category == "individual":
+                image_path = "images/individual_b.png"
+            elif self.category == "group":
+                image_path = "images/group_b.png"
+        self.category_icon.icon = image_path
 
 
 
@@ -1406,7 +1423,6 @@ class Chat(Box):
                         txfee = Decimal('0.0001')
                         amount = Decimal(total_balance) - merge_fee
                         await self.merge_utxos(address[0], amount, txfee)
-                        return
                     list_txs = self.storage.get_txs()
                     for data in listunspent:
                         txid = data['txid']
@@ -1622,7 +1638,7 @@ class Chat(Box):
             text=username[0],
             style=Pack(
                 font_weight = BOLD,
-                padding = (11,0,0,0)
+                padding = (11,0,0,5)
             )
         )
         id_label = Label(
@@ -1637,7 +1653,7 @@ class Chat(Box):
             text=contact_id,
             style=Pack(
                 font_weight = BOLD,
-                padding = (11,0,0,0),
+                padding = (11,0,0,5),
                 flex =1
             )
         )
@@ -1964,7 +1980,6 @@ class Chat(Box):
                             self.storage.message(self.contact_id, author, text, amount, timestamp)
                             self.message_input.value = ""
                             self.fee_input.value = "0.00020000"
-                            self.enable_send_button()
                             return
                         await asyncio.sleep(3)
                 else:
@@ -1974,6 +1989,7 @@ class Chat(Box):
     
 
     def enable_send_button(self):
+        self.send_toggle = False
         self.send_button.enabled = True
         self.message_input.readonly = False
 
@@ -1998,7 +2014,7 @@ class Chat(Box):
         )
         await asyncio.sleep(0.1)
         self.output_box.vertical_position = self.output_box.max_vertical_position
-        self.send_toggle = False
+        self.enable_send_button()
 
     
     def insert_unread_message(self, author, text, amount, timestamp):
@@ -2212,3 +2228,5 @@ class Messages(Box):
         self.chat.contact_info_box.style.background_color = panel_color
         self.chat.input_box.style.background_color = panel_color
         self.chat.options_box.style.background_color = panel_color
+        for widget in self.chat.contacts_box.children:
+            self.app.add_background_task(widget.update_contact_mode)

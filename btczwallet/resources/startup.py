@@ -8,7 +8,7 @@ import os
 from toga import (
     App, Box, Label, ProgressBar, Window
 )
-from toga.colors import rgb, GRAY, BLACK
+from toga.colors import rgb, GRAY
 from toga.style.pack import Pack
 from toga.constants import CENTER, BOLD, COLUMN, ROW, BOTTOM, LEFT, RIGHT
 
@@ -36,6 +36,12 @@ class BTCZSetup(Box):
         self.node_status = None
         self.blockchaine_index = None
 
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+
         self.status_label = Label(
             text="Verify binary files...",
             style=Pack(
@@ -49,7 +55,8 @@ class BTCZSetup(Box):
         self.status_box = Box(
             style=Pack(
                 direction=ROW,
-                flex = 7
+                flex = 7,
+                background_color = panel_color
             )
         )
         self.progress_bar = ProgressBar(
@@ -352,3 +359,12 @@ class BTCZSetup(Box):
         self.main.hide()
         await asyncio.sleep(1)
         self.main_menu.show()
+
+
+    def update_setup_mode(self):
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+        self.status_box.style.background_color = panel_color

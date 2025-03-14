@@ -10,7 +10,7 @@ from toga.constants import (
     COLUMN, ROW, TOP, LEFT, BOLD, RIGHT,
     CENTER
 )
-from toga.colors import GRAY
+from toga.colors import GRAY, rgb
 
 from .utils import Utils
 from .client import Client
@@ -36,6 +36,12 @@ class Home(Box):
         self.curve_image = None
         self.data = None
 
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+
         self.market_label = Label(
             text="MarketCap :",
             style=Pack(
@@ -48,6 +54,7 @@ class Home(Box):
         )
         self.market_box = Box(
             style=Pack(
+                background_color = panel_color,
                 direction = ROW,
                 alignment = TOP,
                 height = 45,
@@ -338,12 +345,6 @@ class Home(Box):
             os.remove(self.curve_image)
 
 
-    def update_home_mode(self, widget):
-        curve_image = self.utils.create_curve(self.data)
-        if curve_image:
-            self.bitcoinz_curve.image = curve_image
-
-
     def on_box_resized(self, widget, allocation):
         width = allocation.width
         if not self.cap_toggle:
@@ -374,3 +375,15 @@ class Home(Box):
                     self.volume_value
                 )
                 self.volume_toggle = None
+
+
+    def update_home_mode(self, widget):
+        mode = self.utils.get_sys_mode()
+        if mode:
+            panel_color = rgb(56,56,56)
+        else:
+            panel_color = rgb(230,230,230)
+        self.market_box.style.background_color = panel_color
+        curve_image = self.utils.create_curve(self.data)
+        if curve_image:
+            self.bitcoinz_curve.image = curve_image

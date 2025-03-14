@@ -24,7 +24,7 @@ class AppToolbar():
         )
 
         self.stop_exit_cmd = Command(
-            text="Stop/Exit",
+            text="Stop node",
             group=self.app_menu,
             action=True
         )

@@ -2,6 +2,7 @@
 from toga import (
     App, Window, Box, ImageView, Label
 )
+from .framework import Gtk
 from toga.colors import GRAY
 from toga.style.pack import Pack
 from toga.constants import RIGHT, BOLD, COLUMN, ROW
@@ -21,6 +22,8 @@ class BitcoinZGUI(Window):
         self.title = "BitcoinZ Wallet"
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
+
+        Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.on_change_mode)
 
         self.startup_panel = Box(
             style=Pack(
@@ -70,6 +73,10 @@ class BitcoinZGUI(Window):
             self.app_version
         )
         self.content = self.startup_panel
+
+
+    def on_change_mode(self, settings, param_spec):
+        self.startup.update_setup_mode()
 
 
 class BitcoinZWallet(App):
