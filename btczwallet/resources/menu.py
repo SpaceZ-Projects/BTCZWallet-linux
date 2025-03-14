@@ -1,6 +1,7 @@
 
 import asyncio
 import webbrowser
+import shutil
 
 from toga import (
     MainWindow, Box, Button
@@ -197,6 +198,7 @@ class Menu(MainWindow):
         self.apptoolbar.generate_t_cmd.action = self.generate_transparent_address
         self.apptoolbar.generate_z_cmd.action = self.generate_private_address
         self.apptoolbar.edit_username_cmd.action = self.edit_messages_username
+        self.apptoolbar.backup_messages_cmd.action = self.backup_messages
         self.apptoolbar.check_update_cmd.action = self.check_app_version
         self.apptoolbar.join_us_cmd.action = self.join_us
 
@@ -270,6 +272,24 @@ class Menu(MainWindow):
     def close_edit_username(self, button):
         self.edit_user_toggle = None
         self.edit_window.close()
+
+
+    def backup_messages(self, action):
+        def on_result(widget, result):
+            if result:
+                shutil.copy(self.data, result)
+                self.info_dialog(
+                    title="Backup Successful!",
+                    message=f"Your messages have been successfully backed up to:\n{result}"
+                )
+        self.data = self.storage.is_exists()
+        if self.data:
+            self.save_file_dialog(
+                title="Save backup to...",
+                suggested_filename=self.data,
+                file_types=["dat"],
+                on_result=on_result
+            )
 
 
     def join_us(self, action):

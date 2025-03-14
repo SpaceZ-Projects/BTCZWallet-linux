@@ -65,6 +65,14 @@ class AppToolbar():
         self.edit_username_cmd = Command(
             text="Edit username",
             group=self.messages_menu,
+            order=0,
+            action=True
+        )
+
+        self.backup_messages_cmd = Command(
+            text="Backup messages",
+            group=self.messages_menu,
+            order=1,
             action=True
         )
 
@@ -94,6 +102,7 @@ class AppToolbar():
             self.generate_t_cmd,
             self.generate_z_cmd,
             self.edit_username_cmd,
+            self.backup_messages_cmd,
             self.check_update_cmd,
             self.join_us_cmd
         )
