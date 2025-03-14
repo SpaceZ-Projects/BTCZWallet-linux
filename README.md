@@ -1,6 +1,8 @@
 # BTCZWallet-linux
 BitcoinZ Full Node GUI Wallet (Linux)
 
+<p align="center"><img src="https://github.com/SpaceZ-Projects/BTCZWallet-linux/blob/main/screenshots/home.png" </p>
+
 # Install dependencies
 
 - Ubuntu / Debian
