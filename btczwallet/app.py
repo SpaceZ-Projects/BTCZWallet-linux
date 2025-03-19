@@ -33,14 +33,14 @@ class BitcoinZGUI(Window):
         )
         self.bitcoinz_logo = ImageView(
             image="images/BitcoinZ.png",
-            style=(Pack(
+            style=Pack(
                 padding_top = 22,
                 flex = 8
-            ))
+            )
         )
         self.version_box = Box(
             style=Pack(
-            direction = ROW
+                direction = ROW
             )
         )
         self.empty_box = Box(
