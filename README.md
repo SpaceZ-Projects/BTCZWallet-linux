@@ -9,7 +9,7 @@ BitcoinZ Full Node GUI Wallet (Linux)
 
 ```
 sudo apt update
-sudo apt install git build-essential cmake pkg-config python3 python3-dev python3-venv libgirepository1.0-dev libcairo2-dev gir1.2-gtk-3.0 libcanberra-gtk3-module girepository-2.0
+sudo apt install git build-essential cmake pkg-config python3 python3-dev python3-venv libgirepository-2.0-dev libcairo2-dev gir1.2-gtk-3.0 libcanberra-gtk3-module
 ```
 - Fedora
 
@@ -49,5 +49,13 @@ briefcase dev
 
 ```
 briefcase package
-``` 
+```
+
+# Docker
+
+`--target` docker base image tag for the distribution to target for the build
+
+```
+briefcase package --target ubuntu:noble
+```
 
