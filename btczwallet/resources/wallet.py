@@ -4,7 +4,7 @@ import json
 
 from toga import App, Box, Label, ImageView
 from toga.style.pack import Pack
-from toga.colors import rgb, GRAY, RED, BLACK
+from toga.colors import rgb, GRAY, RED
 from toga.constants import (
     TOP, ROW, LEFT, BOLD, COLUMN,
     RIGHT, CENTER, BOTTOM
@@ -12,6 +12,7 @@ from toga.constants import (
 
 from .client import Client
 from .utils import Utils
+from .units import Units
 
 class Wallet(Box):
     def __init__(self, app:App):
@@ -27,6 +28,7 @@ class Wallet(Box):
         self.app = app
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
+        self.units = Units()
 
         self.unconfirmed_balance_toggle = None
         mode = self.utils.get_sys_mode()
@@ -200,15 +202,15 @@ class Wallet(Box):
             totalbalances,_ = await self.commands.z_getTotalBalance()
             if totalbalances is not None:
                 balances = json.loads(totalbalances)
-                totalbalance = self.utils.format_balance(float(balances.get('total')))
-                transparentbalance = self.utils.format_balance(float(balances.get('transparent')))
-                privatebalance = self.utils.format_balance(float(balances.get('private')))
+                totalbalance = self.units.format_balance(float(balances.get('total')))
+                transparentbalance = self.units.format_balance(float(balances.get('transparent')))
+                privatebalance = self.units.format_balance(float(balances.get('private')))
                 self.total_value.text = totalbalance
                 self.transparent_value.text = transparentbalance
                 self.private_value.text = privatebalance
             unconfirmed_balance,_ = await self.commands.getUnconfirmedBalance()
             if unconfirmed_balance is not None:
-                unconfirmed = self.utils.format_balance(float(unconfirmed_balance))
+                unconfirmed = self.units.format_balance(float(unconfirmed_balance))
                 if float(unconfirmed) > 0:
                     if not self.unconfirmed_balance_toggle:
                         self.insert(2, self.unconfirmed_box)

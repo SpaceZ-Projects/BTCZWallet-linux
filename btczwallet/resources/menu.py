@@ -182,7 +182,7 @@ class Menu(MainWindow):
         self.home_button_click(None)
         self.add_actions_cmds()
         try:
-            self.statusicon = Notify(self.app, self.home_page, self.mining_page)
+            self.statusicon = Notify(self.app, self, self.home_page, self.mining_page)
             self.statusicon.show()
         except Exception:
             pass
@@ -427,14 +427,29 @@ class Menu(MainWindow):
             
 
     async def stop_node_exit(self, action):
+        async def on_result(widget, result):
+            if result is True:
+                self.home_page.clear_cache()
+                await self.commands.stopNode()
+                self.app.exit()
+                
         if self.mining_page.mining_status:
             return
-        self.home_page.clear_cache()
-        await self.commands.stopNode()
-        self.app.exit()
+        self.question_dialog(
+            title="Exit app",
+            message="Are you sure you want to stop the node and exit the application ?",
+            on_result=on_result
+        )
 
     def exit_app(self, action):
+        def on_result(widget, result):
+            if result is True:
+                self.home_page.clear_cache()
+                self.app.exit()
         if self.mining_page.mining_status:
             return
-        self.home_page.clear_cache()
-        self.app.exit()
+        self.question_dialog(
+            title="Exit app",
+            message="Are you sure you want to exit the application ?",
+            on_result=on_result
+        )

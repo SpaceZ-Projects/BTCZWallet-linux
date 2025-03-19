@@ -16,6 +16,7 @@ from toga.constants import (
 from toga.colors import rgb, GRAY, YELLOW, BLACK, RED, TRANSPARENT
 from .client import Client
 from .utils import Utils
+from .units import Units
 from .storage import Storage
 
 
@@ -33,6 +34,7 @@ class Send(Box):
         self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
+        self.units = Units()
         self.storage = Storage(self.app)
 
         self.send_toggle = None
@@ -443,6 +445,7 @@ class Send(Box):
         self.send_button = Button(
             text="Cash Out",
             style=Pack(
+                color = GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 width = 120,
@@ -450,6 +453,8 @@ class Send(Box):
             ),
             on_press = self.send_button_click
         )
+        self.send_button._impl.native.connect("enter-notify-event", self.send_button_mouse_enter)
+        self.send_button._impl.native.connect("leave-notify-event", self.send_button_mouse_leave)
 
         self.confirmation_box = Box(
             style=Pack(
@@ -675,7 +680,7 @@ class Send(Box):
             self.transparent_toggle = None
 
         elif self.private_toggle:
-            self.transparent_button.style.color = GRAY
+            self.private_button.style.color = GRAY
             self.private_button.style.background_color = TRANSPARENT
             self.private_toggle = None
 
@@ -720,7 +725,7 @@ class Send(Box):
                 self.update_fees_option(True)
             balance, _ = await self.commands.z_getBalance(selected_address)
             if balance:
-                format_balance = self.utils.format_balance(float(balance))
+                format_balance = self.units.format_balance(float(balance))
                 self.address_balance.text = format_balance
 
         elif selected_address == "Main Account":
@@ -732,7 +737,7 @@ class Send(Box):
             if total_balances:
                 balances = json.loads(total_balances)
                 transparent = balances.get('transparent')
-                format_balance = self.utils.format_balance(float(transparent))
+                format_balance = self.units.format_balance(float(transparent))
                 self.address_balance.text = format_balance
         else:
             self.address_balance.text = "0.00000000"
@@ -1101,6 +1106,18 @@ class Send(Box):
         self.amount_input.readonly = False
         self.fee_input.readonly = False
         self.operation_status.text = ""
+
+    
+    def send_button_mouse_enter(self, widget, event):
+        self.send_button.style.color = BLACK
+        if self.transparent_toggle:
+            self.send_button.style.background_color = YELLOW
+        elif self.private_toggle:
+            self.send_button.style.background_color = rgb(114,137,218)
+
+    def send_button_mouse_leave(self, widget, event):
+        self.send_button.style.color = GRAY
+        self.send_button.style.background_color = TRANSPARENT
 
 
     def update_send_mode(self, widegt):

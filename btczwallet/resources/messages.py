@@ -13,10 +13,11 @@ from toga import (
 from ..framework import ClipBoard, Gtk, Gdk, is_wsl
 from toga.style.pack import Pack
 from toga.constants import ROW, CENTER, COLUMN, BOLD, BOTTOM
-from toga.colors import rgb, BLACK, GRAY, RED, ORANGE
+from toga.colors import rgb, BLACK, GRAY, RED, ORANGE, TRANSPARENT
 
 from .storage import Storage
 from .utils import Utils
+from .units import Units
 from .client import Client
 
 if not is_wsl():
@@ -367,6 +368,7 @@ class Message(Box):
 
         self.app = app
         self.utils = Utils(self.app)
+        self.units = Units()
         self.output_box = output
         
         self.author = author
@@ -426,6 +428,7 @@ class Message(Box):
                 flex = 1
             )
         )
+        self.message_value._impl.native.connect("scroll-event", self.on_scroll)
         message_value = self.message_value._impl.native.get_child()
         message_value.set_left_margin(5)
 
@@ -441,7 +444,7 @@ class Message(Box):
         )
         if self.amount > 0.0001:
             gift = self.amount - 0.0001
-            gift_format = self.utils.format_balance(gift)
+            gift_format = self.units.format_balance(gift)
             self.gift_value.text = f"Gift : {gift_format}"
             self.sender_box.add(
                 self.author_value,
@@ -454,6 +457,15 @@ class Message(Box):
                 self.message_time
             )
         self.message_box.add(self.message_value)
+
+
+    def on_scroll(self, widget, event):
+        if event.delta_y > 0:
+            self.wheel = 20
+        elif event.delta_y < 0:
+            self.wheel = -20
+        postion = self.output_box.vertical_position + self.wheel
+        self.output_box.vertical_position = postion
 
 
 
@@ -626,6 +638,7 @@ class NewContact(Window):
         )
 
         self.utils = Utils(self.app)
+        self.units = Units()
         self.commands = Client(self.app)
         self.storage = Storage(self.app)
         self.chat = chat
@@ -795,7 +808,7 @@ class NewContact(Window):
         destination_address = self.address_input.value
         amount = 0.0001
         txfee = 0.0001
-        id = self.utils.generate_id()
+        id = self.units.generate_id()
         category, username, address = self.storage.get_identity()
         memo = {"type":"request","category":category,"id":id,"username":username,"address":address}
         memo_str = json.dumps(memo)
@@ -870,6 +883,7 @@ class Pending(Box):
         self.app = app
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
+        self.units = Units()
         self.storage = Storage(self.app)
         self.pending_window = window
         self.chat = chat
@@ -941,7 +955,7 @@ class Pending(Box):
         amount = Decimal('0.0001')
         txfee = Decimal('0.0001')
         category, username, address = self.storage.get_identity()
-        id = self.utils.generate_id()
+        id = self.units.generate_id()
         memo = {"type":"identity","category":category,"id":id,"username":username,"address":address}
         memo_str = json.dumps(memo)
         await self.send_memo(
@@ -1140,6 +1154,7 @@ class Chat(Box):
         self.app = app
         self.main = main
         self.utils = Utils(self.app)
+        self.units = Units()
         self.commands = Client(self.app)
         self.storage = Storage(self.app)
         self.clipboard = ClipBoard()
@@ -1267,16 +1282,16 @@ class Chat(Box):
         v_adjustment = self.output_box._impl.native.get_vadjustment()
         v_adjustment.connect("value-changed", self.update_messages_on_scroll)
 
-        self.message_input = MultilineTextInput(
+        self.message_input = TextInput(
             placeholder="Write message",
             style=Pack(
                 font_size = 11,
                 font_weight = BOLD,
-                height = 90,
                 flex = 1,
-                padding =(4,0,0,5)
+                padding =(0,0,5,5)
             ),
-            on_change=self.update_character_count
+            on_change=self.update_character_count,
+            on_confirm=self.verify_message
         )
 
         self.character_count = Label(
@@ -1302,15 +1317,13 @@ class Chat(Box):
         self.input_box = Box(
             style=Pack(
                 direction = ROW,
-                background_color = panel_color,
-                height = 100
+                alignment = BOTTOM
             )
         )
 
         self.options_box = Box(
             style=Pack(
                 direction = COLUMN,
-                background_color = panel_color,
                 alignment = CENTER
             )
         )
@@ -1318,12 +1331,15 @@ class Chat(Box):
         self.send_button = Button(
             text="Send",
             style=Pack(
+                color = GRAY,
                 font_size = 12,
                 font_weight = BOLD,
                 width = 168
             ),
             on_press=self.verify_message
         )
+        self.send_button._impl.native.connect("enter-notify-event", self.send_button_mouse_enter)
+        self.send_button._impl.native.connect("leave-notify-event", self.send_button_mouse_leave)
 
         self.send_box = Box(
             style=Pack(
@@ -1404,7 +1420,7 @@ class Chat(Box):
             if address:
                 balance, _= await self.commands.z_getBalance(address[0])
                 if balance:
-                    balance = self.utils.format_balance(balance)
+                    balance = self.units.format_balance(balance)
                     self.address_balance.text = f"Balance : {balance}"
             
             await asyncio.sleep(5)
@@ -2052,6 +2068,15 @@ class Chat(Box):
             await asyncio.sleep(1)
 
 
+    def send_button_mouse_enter(self, widget, event):
+        self.send_button.style.color = BLACK
+        self.send_button.style.background_color = rgb(114,137,218)
+
+    def send_button_mouse_leave(self, widget, event):
+        self.send_button.style.color = GRAY
+        self.send_button.style.background_color = TRANSPARENT
+
+
     async def get_message_timestamp(self):
         blockchaininfo, _ = await self.commands.getBlockchainInfo()
         if blockchaininfo is not None:
@@ -2226,7 +2251,5 @@ class Messages(Box):
         self.chat.info_box.style.background_color = panel_color
         self.chat.address_balance.style.background_color = panel_color
         self.chat.contact_info_box.style.background_color = panel_color
-        self.chat.input_box.style.background_color = panel_color
-        self.chat.options_box.style.background_color = panel_color
         for widget in self.chat.contacts_box.children:
             self.app.add_background_task(widget.update_contact_mode)

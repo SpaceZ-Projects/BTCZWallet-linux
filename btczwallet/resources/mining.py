@@ -3,6 +3,7 @@ import asyncio
 import json
 import psutil
 import re
+import os
 
 from toga import (
     App, Box, Label, Selection, TextInput,
@@ -10,9 +11,11 @@ from toga import (
 )
 from toga.style.pack import Pack
 from toga.constants import COLUMN, CENTER, BOLD, ROW
-from toga.colors import rgb, GRAY, WHITE, BLACK
+from toga.colors import (
+    rgb, GRAY, BLACK, TRANSPARENT, GREENYELLOW, RED)
 
 from .utils import Utils
+from .units import Units
 from .client import Client
 
 
@@ -29,6 +32,7 @@ class Mining(Box):
         self.app = app
         self.main = main
         self.utils = Utils(self.app)
+        self.units = Units()
         self.commands = Client(self.app)
 
         self.mining_toggle = None
@@ -124,7 +128,6 @@ class Mining(Box):
         self.address_balance = Label(
             text="0.00000000",
             style=Pack(
-                color = GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 text_align = CENTER,
@@ -161,14 +164,7 @@ class Mining(Box):
                 padding_top = 10
             ),
             items=[
-                {"pool": "Select Pool"},
-                {"pool": "2Mars"},
-                {"pool": "Swgroupe"},
-                {"pool": "Zeropool"},
-                {"pool": "PCmining"},
-                {"pool": "Darkfibersmines"},
-                {"pool": "Zergpool"},
-                {"pool": "Zpool"}
+                {"pool": "Select Pool"}
             ],
             accessor="pool",
             on_change=self.update_server_selection
@@ -259,6 +255,7 @@ class Mining(Box):
         self.start_mining_button = Button(
             text="Start Mining",
             style=Pack(
+                color = GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 width = 130,
@@ -266,6 +263,8 @@ class Mining(Box):
             ),
             on_press=self.start_mining_button_click
         )
+        self.start_mining_button._impl.native.connect("enter-notify-event", self.start_mining_button_mouse_enter)
+        self.start_mining_button._impl.native.connect("leave-notify-event", self.start_mining_button_mouse_leave)
 
         self.start_mining_box = Box(
             style=Pack(
@@ -340,11 +339,7 @@ class Mining(Box):
         self.selected_address = self.address_selection.value.select_address
         balance, _ = await self.commands.z_getBalance(self.selected_address)
         if balance:
-            if float(balance) <= 0:
-                self.address_balance.style.color = GRAY
-            else:
-                self.address_balance.style.color = BLACK
-            format_balance = self.utils.format_balance(float(balance))
+            format_balance = self.units.format_balance(float(balance))
             self.address_balance.text = format_balance
 
     
@@ -364,49 +359,33 @@ class Mining(Box):
         self.selected_pool = self.pool_selection.value.pool
         if not self.selected_pool:
             return
-        if self.selected_pool == "2Mars":
-            pool_rergion_items = [
-                {"region": "Canada", "server": "btcz.ca.2mars.biz:1234"},
-                {"region": "USA", "server": "btcz.us.2mars.biz:1234"},
-                {"region": "Netherlands", "server": "btcz.eu.2mars.biz:1234"},
-                {"region": "Singapore", "server": "btcz.sg.2mars.biz:1234"}
-            ]
-        elif self.selected_pool == "Swgroupe":
-            pool_rergion_items = [
-                {"region": "France", "server": "swgroupe.fr:2001"}
-            ]
-        elif self.selected_pool == "Zeropool":
-            pool_rergion_items = [
-                {"region": "USA", "server": "zeropool.io:1235"}
-            ]
-        elif self.selected_pool == "PCmining":
-            pool_rergion_items = [
-                {"region": "Germany", "server": "btcz.pcmining.xyz:3333"}
-            ]
-        elif self.selected_pool == "Darkfibersmines":
-            pool_rergion_items = [
-                {"region": "USA", "server": "142.4.211.28:4000"},
-            ]
-        elif self.selected_pool == "Zergpool":
-            pool_rergion_items = [
-                {"region": "North America", "server": "equihash144.na.mine.zergpool.com:2146"},
-                {"region": "Europe", "server": "equihash144.eu.mine.zergpool.com:2146"},
-                {"region": "Asia", "server": "equihash144.asia.mine.zergpool.com:2146"}
-            ]
-        elif self.selected_pool == "Zpool":
-            pool_rergion_items = [
-                {"region": "Europe", "server": "equihash144.eu.mine.zpool.ca:2144"},
-                {"region": "North America", "server": "equihash144.na.mine.zpool.ca:2144"},
-                {"region": "Asia", "server": "equihash144.sea.mine.zpool.ca:2144"},
-                {"region": "Japan", "server": "equihash144.jp.mine.zpool.ca:2144"}
-            ]
+        
+        pools_data = self.get_pools_data()
+        if self.selected_pool in pools_data:
+            self.pool_api = pools_data[self.selected_pool]["api"]
+            pool_rergion_items = pools_data[self.selected_pool]["regions"]
+            self.pool_region_selection.items = pool_rergion_items
+            self.pool_region_selection.enabled = True
         else:
             self.pool_region_selection.items.clear()
             self.pool_region_selection.enabled = False
-            return
+
+
+    def get_pools_data(self):
+        try:
+            pools_json = os.path.join(self.app.paths.app, 'resources', 'pools.json')
+            with open(pools_json, 'r') as f:
+                pools_data = json.load(f)
+                return pools_data
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
         
-        self.pool_region_selection.items = pool_rergion_items
-        self.pool_region_selection.enabled = True
+
+    def get_pools_list(self):
+        pools_data = self.get_pools_data()
+        if pools_data:
+            pool_items = [{"pool": pool} for pool in pools_data.keys()]
+            return pool_items
 
 
     async def update_region_server(self, selection):
@@ -449,12 +428,12 @@ class Mining(Box):
         if miner_path:
             if self.selected_miner == "MiniZ":
                 if self.selected_pool == "Zpool":
-                    command = [f'{miner_path} --url {self.selected_address}.{self.worker_name}@{self.selected_server} --pass c=BTCZ,zap=BTCZ']
+                    command = [f'{miner_path} --url {self.selected_address}.{self.worker_name}@{self.selected_server} --pass c=BTCZ,zap=BTCZ --pers auto']
                 else:
                     command = [f'{miner_path} --url {self.selected_address}.{self.worker_name}@{self.selected_server} --pass x --par 144,5 --pers BitcoinZ']
             elif self.selected_miner == "Gminer":
                 if self.selected_pool == "Zpool":
-                    command = [f'{miner_path} --server {self.selected_server} --user {self.selected_address}.{self.worker_name} --pass c=BTCZ,zap=BTCZ --algo 144_5 --pers BitcoinZ']
+                    command = [f'{miner_path} --server {self.selected_server} --user {self.selected_address}.{self.worker_name} --pass c=BTCZ,zap=BTCZ --algo 144_5 --pers auto']
                 else:
                     command = [f'{miner_path} --server {self.selected_server} --user {self.selected_address}.{self.worker_name} --pass x --algo 144_5 --pers BitcoinZ']
             self.disable_mining_inputs()
@@ -522,6 +501,9 @@ class Mining(Box):
         transparent_addresses = await self.get_transparent_addresses()
         self.address_selection.items.clear()
         self.address_selection.items = transparent_addresses
+        pools_list = self.get_pools_list()
+        for pool in pools_list:
+            self.pool_selection.items.insert(1, pool)
 
 
     async def stop_mining_button_click(self, button):
@@ -545,10 +527,14 @@ class Mining(Box):
         if option == "stop":
             self.start_mining_button.text = "Stop"
             self.start_mining_button.on_press = self.stop_mining_button_click
+            self.start_mining_button._impl.native.connect("enter-notify-event", self.stop_mining_button_mouse_enter)
+            self.start_mining_button._impl.native.connect("leave-notify-event", self.stop_mining_button_mouse_leave)
 
         elif option == "start":
             self.start_mining_button.text = "Start Mining"
             self.start_mining_button.on_press = self.start_mining_button_click
+            self.start_mining_button._impl.native.connect("enter-notify-event", self.start_mining_button_mouse_enter)
+            self.start_mining_button._impl.native.connect("leave-notify-event", self.start_mining_button_mouse_leave)
 
     
     def disable_mining_button(self):
@@ -570,6 +556,25 @@ class Mining(Box):
         self.pool_selection.enabled = True
         self.pool_region_selection.enabled = True
         self.worker_input.readonly = False
+
+
+    def start_mining_button_mouse_enter(self, sender, event):
+        self.start_mining_button.style.color = BLACK
+        self.start_mining_button.style.background_color = GREENYELLOW
+
+
+    def start_mining_button_mouse_leave(self, sender, event):
+        self.start_mining_button.style.color = GRAY
+        self.start_mining_button.style.background_color = TRANSPARENT
+
+    def stop_mining_button_mouse_enter(self, sender, event):
+        self.start_mining_button.style.color = BLACK
+        self.start_mining_button.style.background_color = RED
+
+
+    def stop_mining_button_mouse_leave(self, sender, event):
+        self.start_mining_button.style.color = GRAY
+        self.start_mining_button.style.background_color = TRANSPARENT
 
 
     def update_mining_mode(self, widget):

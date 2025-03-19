@@ -13,6 +13,7 @@ from toga.constants import COLUMN, ROW, CENTER, BOLD, TOP
 from toga.colors import rgb, GRAY, BLACK, YELLOW, TRANSPARENT
 
 from .utils import Utils
+from .units import Units
 from .client import Client
 from .storage import Storage
 
@@ -153,6 +154,7 @@ class Recieve(Box):
         self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
+        self.units = Units()
         self.storage = Storage(self.app)
         self.clipboard = ClipBoard()
 
@@ -399,7 +401,7 @@ class Recieve(Box):
                 self.address_value.text = None
                 return
             qr_image = self.utils.qr_generate(row.addresses)
-            balance = self.utils.format_balance(balance)
+            balance = self.units.format_balance(balance)
             self.address_qr.image = qr_image
             if len(row.addresses) > 38:
                 first_part = row.addresses[:38]

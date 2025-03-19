@@ -14,6 +14,7 @@ from toga.constants import COLUMN, CENTER, BOLD, ROW, LEFT
 
 from .client import Client
 from .utils import Utils
+from .units import Units
 
 if not is_wsl():
     from ..framework import NotifyGtk
@@ -29,6 +30,7 @@ class Txid(Window):
         )
 
         self.utils = Utils(self.app)
+        self.units = Units()
         self.commands = Client(self.app)
         self.transactions = transactions
         self.txid = txid
@@ -198,7 +200,7 @@ class Txid(Window):
                     transaction_info = json.loads(transaction_info)
                 if transaction_info:
                     category = transaction_info['details'][0]['category']
-                    amount = self.utils.format_balance(float(transaction_info['amount']))
+                    amount = self.units.format_balance(float(transaction_info['amount']))
                     confirmations = transaction_info['confirmations']
                     if confirmations <= 0:
                         color = RED
@@ -234,6 +236,7 @@ class Transactions(Box):
         self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
+        self.units = Units()
         self.clipboard = ClipBoard()
 
         self.transactions_toggle = None
@@ -356,7 +359,7 @@ class Transactions(Box):
         for data in sorted_transactions:
             address = data.get("address", "Shielded")
             category = data["category"]
-            amount = self.utils.format_balance(data["amount"])
+            amount = self.units.format_balance(data["amount"])
             timereceived = data["timereceived"]
             formatted_timereceived = datetime.fromtimestamp(timereceived).strftime("%Y-%m-%d %H:%M:%S")
             txid = data["txid"]
@@ -389,7 +392,7 @@ class Transactions(Box):
                     if not any(tx["txid"] == txid for tx in self.transactions_data):
                         address = data.get("address", "Shielded")
                         category = data["category"]
-                        amount = self.utils.format_balance(data["amount"])
+                        amount = self.units.format_balance(data["amount"])
                         timereceived = data["timereceived"]
                         formatted_timereceived = datetime.fromtimestamp(timereceived).strftime("%Y-%m-%d %H:%M:%S")
                         row = {
@@ -448,7 +451,7 @@ class Transactions(Box):
             for data in sorted_transactions:
                 address = data.get("address", "Shielded")
                 category = data["category"]
-                amount = self.utils.format_balance(data["amount"])
+                amount = self.units.format_balance(data["amount"])
                 timereceived = data["timereceived"]
                 formatted_timereceived = datetime.fromtimestamp(timereceived).strftime("%Y-%m-%d %H:%M:%S")
                 txid = data["txid"]
