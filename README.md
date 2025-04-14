@@ -36,7 +36,7 @@ cd BTCZWallet-linux
 python3 -m venv env
 source env/bin/activate
 
-pip install berifcase
+pip install briefcase
 ```
 
 # Run the Gui
