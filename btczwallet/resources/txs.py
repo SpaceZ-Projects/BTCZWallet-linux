@@ -30,7 +30,7 @@ class Txid(Window):
         )
 
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.commands = Client(self.app)
         self.transactions = transactions
         self.txid = txid
@@ -236,7 +236,7 @@ class Transactions(Box):
         self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.clipboard = ClipBoard()
 
         self.transactions_toggle = None
@@ -288,7 +288,6 @@ class Transactions(Box):
 
 
     async def insert_widgets(self, widget):
-        await asyncio.sleep(0.2)
         if not self.transactions_toggle:
             if self.transactions_data:
                 self.add(self.transactions_table)

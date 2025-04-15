@@ -34,7 +34,7 @@ class Send(Box):
         self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.storage = Storage(self.app)
 
         self.send_toggle = None
@@ -468,7 +468,6 @@ class Send(Box):
 
 
     async def insert_widgets(self, widget):
-        await asyncio.sleep(0.2)
         if not self.send_toggle:
             self.add(
                 self.switch_box,

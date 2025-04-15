@@ -28,7 +28,7 @@ class Utils():
         if not os.path.exists(self.app_cache):
             os.makedirs(self.app_cache)
 
-        self.units = Units()
+        self.units = Units(self.app)
 
 
     async def get_repo_info(self):

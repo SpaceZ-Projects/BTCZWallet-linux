@@ -15,10 +15,10 @@ from toga.constants import (
 
 from .client import Client
 from .utils import Utils
-from .wallet import Wallet
+from .wallet import Wallet, ImportKey
 from .home import Home
 from .txs import Transactions
-from .recieve import Recieve, ImportKey
+from .receive import Receive
 from .send import Send
 from .messages import Messages, EditUser
 from .mining import Mining
@@ -40,7 +40,7 @@ class Menu(MainWindow):
         self.statusbar = AppStatusBar(self.app)
 
         self.title = "BitcoinZ Wallet"
-        self.size = (900,640)
+        self.size = (920,640)
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
         self.on_close = self.exit_app
@@ -75,7 +75,7 @@ class Menu(MainWindow):
 
         self.home_page = Home(self.app)
         self.transactions_page = Transactions(self.app, self)
-        self.recieve_page = Recieve(self.app, self)
+        self.receive_page = Receive(self.app, self)
         self.send_page = Send(self.app, self)
         self.messages_page = Messages(self.app, self)
         self.mining_page = Mining(self.app, self)
@@ -115,15 +115,15 @@ class Menu(MainWindow):
             on_press=self.transactions_button_click
         )
 
-        self.recieve_button = Button(
-            text="Recieve",
+        self.receive_button = Button(
+            text="Receive",
             style=Pack(
                 font_weight = BOLD,
                 color = GRAY,
                 flex = 1,
                 padding = (5,0,2,0)
             ),
-            on_press=self.recieve_button_click
+            on_press=self.receive_button_click
         )
 
         self.send_button = Button(
@@ -162,7 +162,7 @@ class Menu(MainWindow):
         self.menu_bar.add(
             self.home_button,
             self.transactions_button,
-            self.recieve_button,
+            self.receive_button,
             self.send_button,
             self.message_button,
             self.mining_button
@@ -170,7 +170,7 @@ class Menu(MainWindow):
 
         self.home_button_toggle = None
         self.transactions_button_toggle = None
-        self.recieve_button_toggle = None
+        self.receive_button_toggle = None
         self.send_button_toggle = None
         self.message_button_toggle = None
         self.mining_button_toggle = None
@@ -206,33 +206,33 @@ class Menu(MainWindow):
 
 
     async def generate_transparent_address(self, action):
-        new_address = await self.commands.getNewAddress()
+        new_address,_ = await self.commands.getNewAddress()
         if new_address:
-            if self.recieve_page.transparent_toggle:
-                self.insert_new_address(new_address[0])
+            if self.receive_page.transparent_toggle:
+                self.insert_new_address(new_address)
             if self.send_page.transparent_toggle:
                 await self.send_page.update_send_options(None)
             self.info_dialog(
                 title="New Address",
-                message=f"Generated address : {new_address[0]}"
+                message=f"Generated address : {new_address}"
             )
 
 
     async def generate_private_address(self, widget):
-        new_address = await self.commands.z_getNewAddress()
+        new_address,_ = await self.commands.z_getNewAddress()
         if new_address:
-            if self.recieve_page.private_toggle:
-                self.insert_new_address(new_address[0])
+            if self.receive_page.private_toggle:
+                self.insert_new_address(new_address)
             if self.send_page.private_toggle:
                 await self.send_page.update_send_options(None)
             self.info_dialog(
                 title="New Address",
-                message=f"Generated address : {new_address[0]}"
+                message=f"Generated address : {new_address}"
             )
 
 
     def insert_new_address(self, address):
-        self.recieve_page.addresses_table.data.insert(
+        self.receive_page.addresses_table.data.insert(
             0, address
         )
 
@@ -333,14 +333,14 @@ class Menu(MainWindow):
         self.app.add_background_task(self.transactions_page.insert_widgets)
 
 
-    def recieve_button_click(self, button):
+    def receive_button_click(self, button):
         self.clear_buttons()
-        self.recieve_button_toggle = True
-        self.recieve_button.style.color = BLACK
-        self.recieve_button.style.background_color = YELLOW
-        self.recieve_button.on_press = None
-        self.pages.add(self.recieve_page)
-        self.app.add_background_task(self.recieve_page.insert_widgets)
+        self.receive_button_toggle = True
+        self.receive_button.style.color = BLACK
+        self.receive_button.style.background_color = YELLOW
+        self.receive_button.on_press = None
+        self.pages.add(self.receive_page)
+        self.app.add_background_task(self.receive_page.insert_widgets)
 
 
     def send_button_click(self, button):
@@ -388,12 +388,12 @@ class Menu(MainWindow):
             self.transactions_button.style.background_color = TRANSPARENT
             self.transactions_button.on_press = self.transactions_button_click
 
-        elif self.recieve_button_toggle:
-            self.recieve_button_toggle = None
-            self.pages.remove(self.recieve_page)
-            self.recieve_button.style.color = GRAY
-            self.recieve_button.style.background_color = TRANSPARENT
-            self.recieve_button.on_press = self.recieve_button_click
+        elif self.receive_button_toggle:
+            self.receive_button_toggle = None
+            self.pages.remove(self.receive_page)
+            self.receive_button.style.color = GRAY
+            self.receive_button.style.background_color = TRANSPARENT
+            self.receive_button.on_press = self.receive_button_click
         
         elif self.send_button_toggle:
             self.send_button_toggle = None
@@ -420,7 +420,7 @@ class Menu(MainWindow):
     def on_change_mode(self, settings, param_spec):
         self.app.add_background_task(self.wallet.update_wallet_mode)
         self.app.add_background_task(self.home_page.update_home_mode)
-        self.app.add_background_task(self.recieve_page.update_recieve_mode)
+        self.app.add_background_task(self.receive_page.update_recieve_mode)
         self.app.add_background_task(self.send_page.update_send_mode)
         self.app.add_background_task(self.messages_page.update_messages_mode)
         self.app.add_background_task(self.mining_page.update_mining_mode)

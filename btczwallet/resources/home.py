@@ -30,7 +30,7 @@ class Home(Box):
         )
         self.app = app
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.commands = Client(self.app)
         self.curve = Curve(self.app)
 

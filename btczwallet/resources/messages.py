@@ -368,7 +368,7 @@ class Message(Box):
 
         self.app = app
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.output_box = output
         
         self.author = author
@@ -638,7 +638,7 @@ class NewContact(Window):
         )
 
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.commands = Client(self.app)
         self.storage = Storage(self.app)
         self.chat = chat
@@ -883,7 +883,7 @@ class Pending(Box):
         self.app = app
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.storage = Storage(self.app)
         self.pending_window = window
         self.chat = chat
@@ -1154,7 +1154,7 @@ class Chat(Box):
         self.app = app
         self.main = main
         self.utils = Utils(self.app)
-        self.units = Units()
+        self.units = Units(self.app)
         self.commands = Client(self.app)
         self.storage = Storage(self.app)
         self.clipboard = ClipBoard()
@@ -1430,7 +1430,7 @@ class Chat(Box):
         while True:
             address = self.storage.get_identity("address")
             if address:
-                listunspent, _= await self.commands.z_listUnspent(address[0])
+                listunspent, _= await self.commands.z_listUnspent(address[0], 0)
                 if listunspent:
                     listunspent = json.loads(listunspent)
                     if len(listunspent) >= 54:
@@ -2117,7 +2117,6 @@ class Messages(Box):
 
         
     async def insert_widgets(self, widget):
-        await asyncio.sleep(0.2)
         if not self.messages_toggle:
             data = self.storage.is_exists()
             if data:
@@ -2143,7 +2142,7 @@ class Messages(Box):
         if data:
             address = self.storage.get_identity("address")
             if address:
-                listunspent, _= await self.commands.z_listUnspent(address[0])
+                listunspent, _= await self.commands.z_listUnspent(address[0], 0)
                 if listunspent:
                     listunspent = json.loads(listunspent)
                     list_txs = self.storage.get_txs()
