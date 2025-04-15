@@ -35,6 +35,7 @@ class AppStatusBar(Box):
         while True:
             blockchaininfo, _ = await self.commands.getBlockchainInfo()
             networksol, _ = await self.commands.getNetworkSolps()
+            connection_count,_ = await self.commands.getConnectionCount()
             deprecationinfo, _ = await self.commands.getDeprecationInfo()
             if blockchaininfo is not None:
                 if isinstance(blockchaininfo, str):
@@ -68,7 +69,7 @@ class AppStatusBar(Box):
                 else:
                     deprecation = "N/A"
 
-            status_text = f"Blocks : {blocks} | Date : {mediantime_date} | Sync : %{float(sync_percentage):.2f} | NetHash : {netsol} Sol/s | Dep : {deprecation} | Size : {int(bitcoinz_size)} MB"
+            status_text = f"Blocks : {blocks} | Date : {mediantime_date} | Sync : %{float(sync_percentage):.2f} | NetHash : {netsol} Sol/s | Conns : {connection_count} | Dep : {deprecation} | Size : {int(bitcoinz_size)} MB"
             self.statusbar.add(status_text)
 
             await asyncio.sleep(5)
