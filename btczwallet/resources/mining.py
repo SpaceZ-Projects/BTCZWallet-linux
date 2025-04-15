@@ -254,6 +254,7 @@ class Mining(Box):
                 padding_left = 20
             )
         )
+        self.totalshares_icon._impl.native.set_tooltip_text("Total shares")
 
         self.totalshares_value = Label(
             text="0.00",
@@ -269,6 +270,7 @@ class Mining(Box):
                 padding_left = 20
             )
         )
+        self.balance_icon._impl.native.set_tooltip_text("Balance")
 
         self.balance_value = Label(
             text="0.00",
@@ -284,6 +286,7 @@ class Mining(Box):
                 padding_left = 20
             )
         )
+        self.immature_icon._impl.native.set_tooltip_text("Immature balance")
 
         self.immature_value = Label(
             text="0.00",
@@ -299,6 +302,7 @@ class Mining(Box):
                 padding = (2,0,0,20)
             )
         )
+        self.paid_icon._impl.native.set_tooltip_text("Total paid")
 
         self.paid_value = Label(
             text="0.00",
@@ -314,6 +318,7 @@ class Mining(Box):
                 padding_left = 20
             )
         )
+        self.solutions_icon._impl.native.set_tooltip_text("Solutions speed")
 
         self.solutions_value = Label(
             text="0.00 Sol/s",
@@ -329,6 +334,7 @@ class Mining(Box):
                 padding_left = 20
             )
         )
+        self.estimated_icon._impl.native.set_tooltip_text("Estimated reward")
 
         self.estimated_value = Label(
             text="0.00 /Day",
