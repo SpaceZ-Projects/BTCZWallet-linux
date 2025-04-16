@@ -16,7 +16,7 @@ from toga.constants import (
 from .client import Client
 from .utils import Utils
 from .wallet import Wallet, ImportKey
-from .home import Home
+from .home import Home, Currency
 from .txs import Transactions
 from .receive import Receive
 from .send import Send
@@ -49,6 +49,7 @@ class Menu(MainWindow):
         
         self.import_key_toggle = None
         self.edit_user_toggle = None
+        self.currency_toggle = None
 
         self.main_box = Box(
             style=Pack(
@@ -196,6 +197,7 @@ class Menu(MainWindow):
         self.apptoolbar = AppToolbar(self.app)
         self.apptoolbar.exit_cmd.action = self.exit_app
         self.apptoolbar.stop_exit_cmd.action = self.stop_node_exit
+        self.apptoolbar.currency_cmd.action = self.show_currencies_list
         self.apptoolbar.generate_t_cmd.action = self.generate_transparent_address
         self.apptoolbar.generate_z_cmd.action = self.generate_private_address
         self.apptoolbar.import_key_cmd.action = self.show_import_key
@@ -203,6 +205,20 @@ class Menu(MainWindow):
         self.apptoolbar.backup_messages_cmd.action = self.backup_messages
         self.apptoolbar.check_update_cmd.action = self.check_app_version
         self.apptoolbar.join_us_cmd.action = self.join_us
+
+
+    def show_currencies_list(self, action):
+        if not self.currency_toggle:
+            self.currencies_window = Currency()
+            self.currencies_window.on_close = self.close_currencies_window
+            self.currencies_window.close_button.on_press = self.close_currencies_window
+            self.currencies_window.show()
+            self.currency_toggle = True
+
+
+    def close_currencies_window(self, button):
+        self.currencies_window.close()
+        self.currency_toggle = None
 
 
     async def generate_transparent_address(self, action):
@@ -254,7 +270,6 @@ class Menu(MainWindow):
             self.import_window = ImportKey(self)
             self.import_window.close_button.on_press = self.close_import_key
             self.import_window.show()
-            self.import_key_toggle = True
 
 
     async def update_wallet(self):
@@ -267,7 +282,6 @@ class Menu(MainWindow):
 
 
     def close_import_key(self, button):
-        self.import_key_toggle = None
         self.import_window.close()
 
 

@@ -346,6 +346,7 @@ class ImportKey(Window):
         self.key_input.readonly = True
         self.import_button.enabled = False
         self.close_button.enabled = False
+        self.main.import_key_toggle = True
         self.app.add_background_task(self.import_private_key)
 
 
@@ -388,3 +389,4 @@ class ImportKey(Window):
         self.key_input.value = ""
         self.import_button.enabled = True
         self.close_button.enabled = True
+        self.main.import_key_toggle = True

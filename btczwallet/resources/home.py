@@ -3,8 +3,12 @@ import asyncio
 import aiohttp
 from datetime import datetime
 import os
+import json
 
-from toga import App, Window, Box, Label, ImageView
+from toga import (
+    App, Window, Box, Label, ImageView,
+    Selection, Button
+)
 from toga.style.pack import Pack
 from toga.constants import (
     COLUMN, ROW, TOP, LEFT, BOLD, RIGHT,
@@ -16,6 +20,7 @@ from .utils import Utils
 from .units import Units
 from .client import Client
 from .curve import Curve
+from .settings import Settings
 
 
 class Home(Box):
@@ -34,6 +39,7 @@ class Home(Box):
         self.units = Units(self.app)
         self.commands = Client(self.app)
         self.curve = Curve(self.app)
+        self.settings = Settings(self.app)
 
         self.home_toggle = None
         self.cap_toggle = None
@@ -300,9 +306,9 @@ class Home(Box):
         while True:
             data = await self.fetch_marketcap()
             if data:
-                market_price = data["market_data"]["current_price"]["usd"]
-                market_cap = data["market_data"]["market_cap"]["usd"]
-                market_volume = data["market_data"]["total_volume"]["usd"]
+                market_price = data["market_data"]["current_price"][self.settings.currency()]
+                market_cap = data["market_data"]["market_cap"][self.settings.currency()]
+                market_volume = data["market_data"]["total_volume"][self.settings.currency()]
                 price_percentage_24 = data["market_data"]["price_change_percentage_24h"]
                 price_percentage_7d = data["market_data"]["price_change_percentage_7d"]
                 last_updated = data["market_data"]["last_updated"]
@@ -310,12 +316,12 @@ class Home(Box):
                 last_updated_datetime = datetime.fromisoformat(last_updated.replace("Z", ""))
                 formatted_last_updated = last_updated_datetime.strftime("%Y-%m-%d %H:%M:%S UTC")
                 btcz_price = self.units.format_price(market_price)
-                self.price_value.text = f"${btcz_price}"
+                self.price_value.text = f"{self.settings.symbol()}{btcz_price}"
                 self.percentage_24_value.text = f"%{price_percentage_24}"
                 self.percentage_7_value.text = f"%{price_percentage_7d}"
                 self.last_updated_label.text = formatted_last_updated
-                self.cap_value.text = f"${market_cap}"
-                self.volume_value.text = f"${market_volume}"
+                self.cap_value.text = f"{self.settings.symbol()}{market_cap}"
+                self.volume_value.text = f"{self.settings.symbol()}{market_volume}"
             await asyncio.sleep(601)
             
 
@@ -380,3 +386,104 @@ class Home(Box):
         curve_image = self.curve.create_curve(self.data)
         if curve_image:
             self.bitcoinz_curve.image = curve_image
+
+
+
+class Currency(Window):
+    def __init__(self):
+        super().__init__(
+            size= (200,100),
+            resizable=False,
+            minimizable=False,
+            closable=False
+        )
+
+        self.utils = Utils(self.app)
+        self.settings = Settings(self.app)
+
+        self.title = "Change Currency"
+        position_center = self.utils.windows_screen_center(self.size)
+        self.position = position_center
+
+        self.main_box = Box(
+            style=Pack(
+                direction = COLUMN,
+                flex = 1,
+                alignment = CENTER
+            )
+        )
+
+        self.currencies_selection = Selection(
+            style=Pack(
+                font_weight = BOLD,
+                font_size = 12,
+                padding = (20,10,10,10)
+            ),
+            items=[
+                {"currency": ""}
+            ],
+            accessor="currency"
+        )
+
+        self.close_button = Button(
+            text="Close",
+            style=Pack(
+                font_size=10,
+                font_weight = BOLD,
+                alignment = CENTER,
+                padding_bottom = 10,
+                width = 100
+            )
+        )
+
+        self.content = self.main_box
+
+        self.main_box.add(
+            self.currencies_selection,
+            self.close_button
+        )
+
+        self.load_currencies()
+
+    
+    def load_currencies(self):
+        current_currency = self.settings.currency()
+        currencies_data = self.get_currencies_list()
+        self.currencies_selection.items.clear()
+        for currency in currencies_data:
+            self.currencies_selection.items.append(currency)
+        self.currencies_selection.value = self.currencies_selection.items.find(current_currency.upper())
+        self.currencies_selection.on_change = self.update_currency
+
+    def update_currency(self, selection):
+        def on_result(widget, result):
+            if result is None:
+                self.close()
+        selected_currency = self.currencies_selection.value.currency
+        if not selected_currency:
+            return
+        currencies_data = self.get_currencies_data()
+        self.settings.update_settings("currency", selected_currency.lower())
+        if selected_currency in currencies_data:
+            symbol = currencies_data[selected_currency]["symbol"]
+            self.settings.update_settings("symbol", symbol)
+        self.info_dialog(
+            title="Currency Changed",
+            message="currency setting has been updated, change will take effect in a few minutes.",
+            on_result=on_result
+        )
+
+    def get_currencies_data(self):
+        try:
+            currencies_json = os.path.join(self.app.paths.app, 'resources', 'currencies.json')
+            with open(currencies_json, 'r') as f:
+                currencies_data = json.load(f)
+                return currencies_data
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
+        
+    def get_currencies_list(self):
+        currencies_data = self.get_currencies_data()
+        if currencies_data:
+            currencies_items = [{"currency": currency} for currency in currencies_data.keys()]
+            return currencies_items

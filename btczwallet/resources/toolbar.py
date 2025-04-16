@@ -32,9 +32,21 @@ class AppToolbar():
             action=True
         )
 
+        self.settings_menu = Group(
+            text="Settings",
+            order=1
+        )
+
+        self.currency_cmd = Command(
+            text="Currency",
+            group=self.settings_menu,
+            order=0,
+            action=True
+        )
+
         self.wallet_menu = Group(
             text="Wallet",
-            order=1
+            order=2
         )
 
         self.generate_address_cmd = Group(
@@ -66,7 +78,7 @@ class AppToolbar():
 
         self.messages_menu = Group(
             text="Messages",
-            order=2
+            order=3
         )
 
         self.edit_username_cmd = Command(
@@ -85,7 +97,7 @@ class AppToolbar():
 
         self.help_menu = Group(
             text="Help",
-            order=3
+            order=4
         )
 
         self.check_update_cmd = Command(
@@ -106,6 +118,7 @@ class AppToolbar():
             self.about_cmd,
             self.exit_cmd,
             self.stop_exit_cmd,
+            self.currency_cmd,
             self.generate_t_cmd,
             self.generate_z_cmd,
             self.import_key_cmd,
