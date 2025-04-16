@@ -39,6 +39,10 @@ class Receive(Box):
         self.recieve_toggle = None
         self.transparent_toggle = None
         self.private_toggle = None
+        self.transparent_addresses_rows = []
+        self.private_addresses_rows = []
+        self.transparent_addresses = []
+        self.private_addresses = []
 
         mode = self.utils.get_sys_mode()
         if mode:
@@ -223,40 +227,69 @@ class Receive(Box):
         self.transparent_toggle = True
         self.transparent_button.style.color = BLACK
         self.transparent_button.style.background_color = YELLOW
+        self.transparent_addresses_rows.clear()
+        self.transparent_addresses.clear()
         self.app.add_background_task(self.display_transparent_addresses)
 
     async def display_transparent_addresses(self, widget):
-        addresses = []
         transparent_addresses = await self.get_transparent_addresses()
         for address in transparent_addresses:
             row = {
                 "addresses": address
             }
-            addresses.append(row)
-        self.addresses_table.data = addresses
+            self.transparent_addresses_rows.append(row)
+            self.transparent_addresses.append(address)
+        self.addresses_table.data = self.transparent_addresses_rows
 
     def private_button_click(self, button):
         self.clear_buttons()
         self.private_toggle = True
         self.private_button.style.color = BLACK
         self.private_button.style.background_color = rgb(114,137,218)
+        self.private_addresses_rows.clear()
+        self.private_addresses.clear()
         self.app.add_background_task(self.display_private_addresses)
 
 
     async def display_private_addresses(self, widget):
-        addresses = []
         private_addresses = await self.get_private_addresses()
         if private_addresses:
             for address in private_addresses:
                 row = {
                     "addresses": address
                 }
-                addresses.append(row)
+                self.private_addresses_rows.append(row)
+                self.private_addresses.append(address)
         else:
-            addresses = [{
+            self.private_addresses_rows = [{
                 "addresses": ""
             }]
-        self.addresses_table.data = addresses
+        self.addresses_table.data = self.private_addresses_rows
+
+    async def update_addresses(self):
+        if self.recieve_toggle:
+            if self.transparent_toggle:
+                transparent_addresses = await self.get_transparent_addresses()
+                if transparent_addresses:
+                    for address in transparent_addresses:
+                        if address not in self.transparent_addresses:
+                            row = {
+                                "addresses": address
+                            }
+                            self.transparent_addresses_rows.append(row)
+                            self.transparent_addresses.append(address)
+            elif self.private_toggle:
+                private_addresses = await self.get_private_addresses()
+                if private_addresses:
+                    for address in private_addresses:
+                        if address not in self.private_addresses:
+                            row = {
+                                "addresses": address
+                            }
+                            self.private_addresses_rows.append(row)
+                            self.private_addresses.append(address)
+            self.addresses_table.data.insert(0, row)
+
 
     def clear_buttons(self):
         if self.transparent_toggle:

@@ -672,6 +672,16 @@ class Send(Box):
         self.address_selection.items.clear()
         self.address_selection.items = selection_items
 
+    async def update_addresses(self):
+        if self.send_toggle:
+            if self.transparent_toggle:
+                selection_items = await self.get_transparent_addresses()
+            if self.private_toggle:
+                selection_items = await self.get_private_addresses()
+
+            self.address_selection.items.clear()
+            self.address_selection.items = selection_items
+
     def clear_buttons(self):
         if self.transparent_toggle:
             self.transparent_button.style.color = GRAY

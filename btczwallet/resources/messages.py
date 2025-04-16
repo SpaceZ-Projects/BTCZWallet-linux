@@ -1413,6 +1413,9 @@ class Chat(Box):
 
     async def update_messages_balance(self, widget):
         while True:
+            if self.main.import_key_toggle:
+                await asyncio.sleep(1)
+                continue
             if not self.main.message_button_toggle:
                 await asyncio.sleep(1)
                 continue
@@ -1428,6 +1431,9 @@ class Chat(Box):
 
     async def waiting_new_memos(self, widget):
         while True:
+            if self.main.import_key_toggle:
+                await asyncio.sleep(1)
+                continue
             address = self.storage.get_identity("address")
             if address:
                 listunspent, _= await self.commands.z_listUnspent(address[0], 0)

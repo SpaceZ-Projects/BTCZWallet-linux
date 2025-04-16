@@ -36,8 +36,8 @@ class Menu(MainWindow):
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
         self.storage = Storage(self.app)
-        self.wallet = Wallet(self.app)
-        self.statusbar = AppStatusBar(self.app)
+        self.wallet = Wallet(self.app, self)
+        self.statusbar = AppStatusBar(self.app, self)
 
         self.title = "BitcoinZ Wallet"
         self.size = (920,640)
@@ -73,7 +73,7 @@ class Menu(MainWindow):
             )
         )
 
-        self.home_page = Home(self.app)
+        self.home_page = Home(self.app, self)
         self.transactions_page = Transactions(self.app, self)
         self.receive_page = Receive(self.app, self)
         self.send_page = Send(self.app, self)
@@ -186,7 +186,7 @@ class Menu(MainWindow):
             self.statusicon.show()
         except Exception:
             pass
-        self.app.add_background_task(self.transactions_page.update_transactions)
+        self.app.add_background_task(self.transactions_page.waiting_new_transactions)
         await asyncio.sleep(1)
         await self.messages_page.gather_unread_memos()
 
@@ -208,10 +208,9 @@ class Menu(MainWindow):
     async def generate_transparent_address(self, action):
         new_address,_ = await self.commands.getNewAddress()
         if new_address:
-            if self.receive_page.transparent_toggle:
-                self.insert_new_address(new_address)
-            if self.send_page.transparent_toggle:
-                await self.send_page.update_send_options(None)
+            await self.receive_page.update_addresses()
+            await self.send_page.update_addresses()
+            await self.mining_page.update_addresses()
             self.info_dialog(
                 title="New Address",
                 message=f"Generated address : {new_address}"
@@ -221,20 +220,12 @@ class Menu(MainWindow):
     async def generate_private_address(self, widget):
         new_address,_ = await self.commands.z_getNewAddress()
         if new_address:
-            if self.receive_page.private_toggle:
-                self.insert_new_address(new_address)
-            if self.send_page.private_toggle:
-                await self.send_page.update_send_options(None)
+            await self.receive_page.update_addresses()
+            await self.send_page.update_addresses()
             self.info_dialog(
                 title="New Address",
                 message=f"Generated address : {new_address}"
             )
-
-
-    def insert_new_address(self, address):
-        self.receive_page.addresses_table.data.insert(
-            0, address
-        )
 
 
     async def check_app_version(self, widget):
@@ -260,11 +251,19 @@ class Menu(MainWindow):
 
     def show_import_key(self, action):
         if not self.import_key_toggle:
-            self.import_window = ImportKey()
-            self.import_window.on_close = self.close_import_key
+            self.import_window = ImportKey(self)
             self.import_window.close_button.on_press = self.close_import_key
             self.import_window.show()
             self.import_key_toggle = True
+
+
+    async def update_wallet(self):
+        self.import_window.close()
+        await self.transactions_page.update_transactions()
+        await self.receive_page.update_addresses()
+        await self.send_page.update_addresses()
+        await self.mining_page.update_addresses()
+        self.import_key_toggle = None
 
 
     def close_import_key(self, button):

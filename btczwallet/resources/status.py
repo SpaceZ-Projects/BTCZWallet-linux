@@ -3,7 +3,7 @@ import asyncio
 from datetime import datetime
 import json
 
-from toga import App, Box
+from toga import App, Window, Box
 from ..framework import StatusBar
 from toga.style.pack import Pack
 from toga.constants import ROW, BOTTOM
@@ -13,7 +13,7 @@ from .utils import Utils
 
 
 class AppStatusBar(Box):
-    def __init__(self, app:App):
+    def __init__(self, app:App, main:Window):
         super().__init__(
             style=Pack(
                 direction = ROW,
@@ -22,6 +22,7 @@ class AppStatusBar(Box):
             )
         )
         self.app = app
+        self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
 
@@ -33,6 +34,9 @@ class AppStatusBar(Box):
 
     async def update_status_bar(self, widget):
         while True:
+            if self.main.import_key_toggle:
+                await asyncio.sleep(1)
+                continue
             blockchaininfo, _ = await self.commands.getBlockchainInfo()
             networksol, _ = await self.commands.getNetworkSolps()
             connection_count,_ = await self.commands.getConnectionCount()

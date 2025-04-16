@@ -4,7 +4,7 @@ import aiohttp
 from datetime import datetime
 import os
 
-from toga import App, Box, Label, ImageView
+from toga import App, Window, Box, Label, ImageView
 from toga.style.pack import Pack
 from toga.constants import (
     COLUMN, ROW, TOP, LEFT, BOLD, RIGHT,
@@ -19,7 +19,7 @@ from .curve import Curve
 
 
 class Home(Box):
-    def __init__(self, app:App):
+    def __init__(self, app:App, main:Window):
         super().__init__(
             style=Pack(
                 direction = COLUMN,
@@ -29,6 +29,7 @@ class Home(Box):
             )
         )
         self.app = app
+        self.main = main
         self.utils = Utils(self.app)
         self.units = Units(self.app)
         self.commands = Client(self.app)
@@ -282,6 +283,9 @@ class Home(Box):
 
     async def update_circulating_supply(self, widget):
         while True:
+            if self.main.import_key_toggle:
+                await asyncio.sleep(1)
+                continue
             current_block = await self.commands.getBlockCount()
             circulating = self.units.calculate_circulating(int(current_block[0]))
             remaiming_blocks = self.units.remaining_blocks_until_halving(int(current_block[0]))

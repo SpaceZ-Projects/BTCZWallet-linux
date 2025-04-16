@@ -18,7 +18,7 @@ from .utils import Utils
 from .units import Units
 
 class Wallet(Box):
-    def __init__(self, app:App):
+    def __init__(self, app:App, main:Window):
         super().__init__(
             style=Pack(
                 direction = ROW,
@@ -29,6 +29,7 @@ class Wallet(Box):
         )
 
         self.app = app
+        self.main = main
         self.commands = Client(self.app)
         self.utils = Utils(self.app)
         self.units = Units(self.app)
@@ -202,6 +203,9 @@ class Wallet(Box):
 
     async def update_balances(self, widget):
         while True:
+            if self.main.import_key_toggle:
+                await asyncio.sleep(1)
+                continue
             totalbalances,_ = await self.commands.z_getTotalBalance()
             if totalbalances is not None:
                 balances = json.loads(totalbalances)
@@ -246,13 +250,14 @@ class Wallet(Box):
 
 
 class ImportKey(Window):
-    def __init__(self):
+    def __init__(self, main:Window):
         super().__init__(
             size = (600, 150),
             resizable= False,
             closable=False
         )
         
+        self.main = main
         self.utils = Utils(self.app)
         self.commands = Client(self.app)
 
@@ -336,6 +341,8 @@ class ImportKey(Window):
             )
             self.key_input.focus()
             return
+        self.main_position = self.main.position
+        self.main.hide()
         self.key_input.readonly = True
         self.import_button.enabled = False
         self.close_button.enabled = False
@@ -352,11 +359,28 @@ class ImportKey(Window):
             if result is not None:
                 pass
             else:
+                self.main.position = self.main_position
+                self.main.show()
+                self.app.current_window = self
                 self.error_dialog(
                     "Invalid Private Key",
                     "The private key you entered is not valid. Please check the format and try again."
                 )
-        self.update_import_window()
+                self.update_import_window()
+                return
+        await self.import_key_status()
+
+
+    async def import_key_status(self):
+        while True:
+            result,_ = await self.commands.getInfo()
+            if result:
+                self.main.position = self.main_position
+                self.main.show()
+                await self.main.update_wallet()
+                return
+            
+            await asyncio.sleep(5)
 
 
     def update_import_window(self):
