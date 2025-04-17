@@ -27,6 +27,24 @@ class Settings():
         settings[setting_key] = setting_value
         with open(self.settings_path, 'w') as f:
             json.dump(settings, f, indent=4)
+
+
+    def notification_txs(self):
+         with open(self.settings_path, 'r') as f:
+            settings = json.load(f)
+            if 'notifications_txs' not in settings:
+                return False
+            else:
+                return settings['notifications_txs']
+            
+    
+    def notification_messages(self):
+         with open(self.settings_path, 'r') as f:
+            settings = json.load(f)
+            if 'notifications_messages' not in settings:
+                return False
+            else:
+                return settings['notifications_messages']
             
 
     def currency(self):
