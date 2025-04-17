@@ -29,7 +29,8 @@ class EditUser(Window):
     def __init__(self, username, main:Window):
         super().__init__(
             size = (500, 150),
-            resizable= False
+            resizable= False,
+            closable=False
         )
 
         self.utils = Utils(self.app)

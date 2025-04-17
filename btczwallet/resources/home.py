@@ -390,7 +390,7 @@ class Home(Box):
 
 
 class Currency(Window):
-    def __init__(self):
+    def __init__(self, main:Window):
         super().__init__(
             size= (200,100),
             resizable=False,
@@ -398,6 +398,7 @@ class Currency(Window):
             closable=False
         )
 
+        self.main = main
         self.utils = Utils(self.app)
         self.settings = Settings(self.app)
 
@@ -433,7 +434,8 @@ class Currency(Window):
                 alignment = CENTER,
                 padding_bottom = 10,
                 width = 100
-            )
+            ),
+            on_press=self.close_currencies_window
         )
 
         self.content = self.main_box
@@ -458,6 +460,7 @@ class Currency(Window):
     def update_currency(self, selection):
         def on_result(widget, result):
             if result is None:
+                self.main.currency_toggle = None
                 self.close()
         selected_currency = self.currencies_selection.value.currency
         if not selected_currency:
@@ -487,3 +490,7 @@ class Currency(Window):
         if currencies_data:
             currencies_items = [{"currency": currency} for currency in currencies_data.keys()]
             return currencies_items
+        
+    def close_currencies_window(self, button):
+        self.main.currency_toggle = None
+        self.close()

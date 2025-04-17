@@ -43,6 +43,114 @@ class ClipBoard:
         self.clipboard.store()
 
 
+
+class Toolbar(Gtk.MenuBar):
+    def __init__(self):
+        super().__init__()
+
+        self.commands = []
+
+
+    def add_command(self, commands):
+        if not isinstance(commands, list):
+            raise ValueError("The 'commands' parameter must be a list of Gtk.MenuItem objects.")
+
+        for command in commands:
+            self.commands.append(command)
+            self.append(command)
+        self.show_all()
+
+
+
+class Command(Gtk.MenuItem):
+    def __init__(
+        self,
+        title:str = None,
+        action=None,
+        sub_commands=None
+    ):
+        super().__init__()
+
+        self._handler_id = None
+
+        self._title = title
+        self._action = action
+        self._sub_commands = sub_commands
+
+        self.set_label(self._title)
+
+        if self._action:
+            self.connect("activate", self._action)
+
+        if self._sub_commands:
+            submenu = Gtk.Menu()
+            for sub_command in self._sub_commands:
+                submenu.append(sub_command)
+            submenu.show_all()
+            self.set_submenu(submenu)
+
+    @property
+    def action(self):
+        return self._action
+
+    @action.setter
+    def action(self, new_action):
+        if self._handler_id is not None:
+            self.disconnect(self._handler_id)
+            self._handler_id = None
+
+        self._action = new_action
+        if self._action:
+            self._handler_id = self.connect("activate", self._action)
+
+
+
+class CheckCommand(Gtk.CheckMenuItem):
+    def __init__(
+        self,
+        title: str = None,
+        on_toggled=None,
+        active=False
+    ):
+        super().__init__()
+
+        self._on_toggled = None
+        self._toggled_handler_id = None
+
+        self._title = title
+
+        self.set_label(self._title)
+
+        self.set_active(active)
+
+        if on_toggled:
+            self.connect("toggled", on_toggled)
+
+    @property
+    def active(self):
+        return super().get_active()
+
+    @active.setter
+    def active(self, value: bool):
+        super().set_active(value)
+
+    @property
+    def on_toggled(self):
+        return self._on_toggled
+
+    @on_toggled.setter
+    def on_toggled(self, callback):
+        if self._toggled_handler_id is not None:
+            self.disconnect(self._toggled_handler_id)
+            self._toggled_handler_id = None
+
+        self._on_toggled = callback
+
+        if callback:
+            self._toggled_handler_id = self.connect("toggled", callback)
+
+
+
 class StatusBar(Gtk.Statusbar):
     def __init__(self):
         super().__init__()
