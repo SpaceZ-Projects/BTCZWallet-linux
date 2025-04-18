@@ -9,7 +9,8 @@ class Notify(StatusIconGtk):
     def __init__(self, app:App, main:Window, home_page, mining_page):
         super().__init__(
             icon = "images/BitcoinZ-32.png",
-            on_right_click=self.notify_on_click
+            on_right_click=self.notify_on_click,
+            on_left_click=self.show_menu
         )
 
         self.app = app
@@ -32,6 +33,10 @@ class Notify(StatusIconGtk):
         menu.show_all()
 
         menu.popup(None, None, None, None, button, time)
+
+    
+    def show_menu(self):
+        self.app.current_window = self.main
 
 
     def exit_app(self, action):

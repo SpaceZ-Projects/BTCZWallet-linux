@@ -19,6 +19,7 @@ from .storage import Storage
 from .utils import Utils
 from .units import Units
 from .client import Client
+from .settings import Settings
 
 if not is_wsl():
     from ..framework import NotifyGtk
@@ -183,7 +184,6 @@ class Indentifier(Window):
         self.info_label = Label(
             text="For fist time a username is required for address indentity, you can edit it later",
             style=Pack(
-                color = BLACK,
                 text_align = CENTER,
                 font_weight = BOLD,
                 font_size = 11,
@@ -202,7 +202,6 @@ class Indentifier(Window):
         self.username_input = TextInput(
             placeholder="required",
             style=Pack(
-                color = BLACK,
                 text_align = CENTER,
                 font_size = 12,
                 font_weight = BOLD,
@@ -320,7 +319,6 @@ class NewMessenger(Box):
             text="There no messages address for this wallet, click the button to create new messages address",
             style=Pack(
                 text_align = CENTER,
-                color = BLACK,
                 font_weight = BOLD,
                 font_size = 11
             )
@@ -328,7 +326,6 @@ class NewMessenger(Box):
         self.create_button = Button(
             text="New Messenger",
             style=Pack(
-                color = BLACK,
                 font_weight = BOLD,
                 font_size = 12,
                 width = 160,
@@ -336,6 +333,9 @@ class NewMessenger(Box):
             ),
             on_press=self.create_button_click
         )
+
+        self.create_button._impl.native.connect("enter-notify-event", self.create_button_mouse_enter)
+        self.create_button._impl.native.connect("leave-notify-event", self.create_button_mouse_leave)
 
         self.add(
             self.new_label,
@@ -350,6 +350,17 @@ class NewMessenger(Box):
             self.indentity.close_button.on_press = self.close_indentity_setup
             self.indentity.show()
             self.new_identity_toggel = True
+        else:
+            self.app.current_window = self.indentity
+
+
+    def create_button_mouse_enter(self, widget, event):
+        self.create_button.style.color = BLACK
+        self.create_button.style.background_color = rgb(114,137,218)
+
+    def create_button_mouse_leave(self, widget, event):
+        self.create_button.style.color = GRAY
+        self.create_button.style.background_color = TRANSPARENT
 
 
     def close_indentity_setup(self, button):
@@ -1159,6 +1170,7 @@ class Chat(Box):
         self.commands = Client(self.app)
         self.storage = Storage(self.app)
         self.clipboard = ClipBoard()
+        self.settings = Settings(self.app)
         
         self.send_toggle = None
         self.contact_id = None
@@ -1521,15 +1533,16 @@ class Chat(Box):
         if id:
             self.storage.add_contact(category, id[0], contact_id, username, address)
             self.storage.delete_request(address)
-            try:
-                notify = NotifyGtk(
-                    title="Request Accepted",
-                    message=f"By {username}",
-                    duration=5
-                )
-                notify.popup()
-            except Exception:
-                pass
+            if self.settings.notification_messages():
+                try:
+                    notify = NotifyGtk(
+                        title="Request Accepted",
+                        message=f"By {username}",
+                        duration=5
+                    )
+                    notify.popup()
+                except Exception:
+                    pass
 
 
     async def get_message(self, form, amount):
@@ -1548,15 +1561,16 @@ class Chat(Box):
         else:
             self.unread_messages_toggle = True
             self.storage.unread_message(contact_id, author, message, amount, timestamp)
-            try:
-                notify = NotifyGtk(
-                    title="New Message",
-                    message=f"From : {author}",
-                    duration=5
-                )
-                notify.popup()
-            except Exception:
-                pass
+            if self.settings.notification_messages():
+                try:
+                    notify = NotifyGtk(
+                        title="New Message",
+                        message=f"From : {author}",
+                        duration=5
+                    )
+                    notify.popup()
+                except Exception:
+                    pass
         
 
 
@@ -1573,15 +1587,16 @@ class Chat(Box):
             self.update_pending_list()
         else:
             self.pending_list.insert_pending(category, contact_id, username, address)
-        try:
-            notify = NotifyGtk(
-                title="New Request",
-                message=f"From : {username}",
-                duration=5
-            )
-            notify.popup()
-        except Exception:
-            pass
+        if self.settings.notification_messages():
+            try:
+                notify = NotifyGtk(
+                    title="New Request",
+                    message=f"From : {username}",
+                    duration=5
+                )
+                notify.popup()
+            except Exception:
+                pass
 
 
     async def update_contacts_list(self, widget):
@@ -1875,6 +1890,10 @@ class Chat(Box):
             self.new_contact.close_button.on_press = self.close_contact_window
             self.new_contact.show()
             self.new_contact_toggle = True
+        elif self.new_contact_toggle:
+            self.app.current_window = self.new_contact
+        elif self.pending_toggle:
+            self.app.current_window = self.pending_list
 
 
     def close_contact_window(self, button):
@@ -1910,6 +1929,10 @@ class Chat(Box):
             self.pending_list.close_button.on_press = self.close_pending_window
             self.pending_list.show()
             self.pending_toggle = True
+        elif self.pending_toggle:
+            self.app.current_window = self.pending_list
+        elif self.new_contact_toggle:
+            self.app.current_window = self.new_contact
 
     
     def close_pending_window(self, button):

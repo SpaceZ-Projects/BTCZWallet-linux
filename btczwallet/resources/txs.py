@@ -15,6 +15,7 @@ from toga.constants import COLUMN, CENTER, BOLD, ROW, LEFT
 from .client import Client
 from .utils import Utils
 from .units import Units
+from .settings import Settings
 
 if not is_wsl():
     from ..framework import NotifyGtk
@@ -238,6 +239,7 @@ class Transactions(Box):
         self.utils = Utils(self.app)
         self.units = Units(self.app)
         self.clipboard = ClipBoard()
+        self.settings = Settings(self.app)
 
         self.transactions_toggle = None
         self.no_transaction_toggle = None
@@ -406,15 +408,16 @@ class Transactions(Box):
                         }
                         self.transactions_data.insert(0, row)
                         self.add_transaction(0, row)
-                        try:
-                            notify = NotifyGtk(
-                                title=f"[{category}] : {amount} BTCZ",
-                                message=f"Txid : {txid}",
-                                duration=10
-                            )
-                            notify.popup()
-                        except Exception:
-                            pass
+                        if self.settings.notification_txs():
+                            try:
+                                notify = NotifyGtk(
+                                    title=f"[{category}] : {amount} BTCZ",
+                                    message=f"Txid : {txid}",
+                                    duration=10
+                                )
+                                notify.popup()
+                            except Exception:
+                                pass
             await asyncio.sleep(5)
 
 
