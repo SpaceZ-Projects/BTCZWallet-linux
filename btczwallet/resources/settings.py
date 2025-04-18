@@ -47,6 +47,15 @@ class Settings():
                 return settings['notifications_messages']
             
 
+    def startup(self):
+        with open(self.settings_path, 'r') as f:
+            settings = json.load(f)
+            if 'startup' not in settings:
+                return False
+            else:
+                return settings['startup']
+            
+
     def currency(self):
         with open(self.settings_path, 'r') as f:
             settings = json.load(f)

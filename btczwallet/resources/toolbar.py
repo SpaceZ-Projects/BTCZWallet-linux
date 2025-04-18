@@ -59,12 +59,17 @@ class AppToolbar(Box):
             title="Notifications messages"
         )
 
+        self.startup_cmd = CheckCommand(
+            title="Run on startup"
+        )
+
         self.settings_menu = Command(
             title="Settings",
             sub_commands=[
                 self.currency_cmd,
                 self.notification_txs_cmd,
-                self.notification_messages_cmd
+                self.notification_messages_cmd,
+                self.startup_cmd
             ]
         )
 

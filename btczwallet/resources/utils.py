@@ -21,6 +21,7 @@ class Utils():
         super().__init__()
 
         self.app = app
+        self.app_path = self.app.paths.app
         self.app_data = self.app.paths.data
         self.app_cache = self.app.paths.cache
         if not os.path.exists(self.app_data):
@@ -399,3 +400,40 @@ addnode=37.187.76.80:1989
                 config_file.write(config_content)
         except Exception as e:
             print(f"Error creating config file: {e}")
+
+
+    def add_to_startup(self):
+        excutable_file = os.path.join(self.app_path.parents[3], 'bin', 'btczwallet')
+        if not os.path.exists(excutable_file):
+            return None
+        autostart_dir = os.path.join(os.path.expanduser("~"), ".config", "autostart")
+        os.makedirs(autostart_dir, exist_ok=True)
+        desktop_file = os.path.join(autostart_dir, "BTCZWallet.desktop")
+        desktop_entry = f"""[Desktop Entry]
+Type=Application
+Name=BTCZ Wallet
+Exec={excutable_file}
+Icon=wallet
+Terminal=false
+X-GNOME-Autostart-enabled=true
+"""
+
+        try:
+            with open(desktop_file, "w") as f:
+                f.write(desktop_entry)
+            os.chmod(desktop_file, 0o755)
+            return True
+        except Exception as e:
+            print(f"Failed to create autostart file: {e}")
+            return None
+        
+    
+    def remove_from_startup(self):
+        desktop_file = os.path.join(os.path.expanduser("~"), ".config", "autostart", "BTCZWallet.desktop")
+        try:
+            if os.path.exists(desktop_file):
+                os.remove(desktop_file)
+                return True
+        except Exception as e:
+            print(f"Failed to remove autostart file: {e}")
+        return None

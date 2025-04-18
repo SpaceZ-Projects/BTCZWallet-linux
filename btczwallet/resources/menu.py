@@ -206,10 +206,15 @@ class Menu(Window):
             self.toolbar.notification_messages_cmd.active = True
         else:
             self.toolbar.notification_messages_cmd.active = self.settings.notification_messages()
+        if self.settings.startup():
+            self.toolbar.startup_cmd.active = True
+        else:
+            self.toolbar.startup_cmd.active = self.settings.startup()
 
+        self.toolbar.currency_cmd.action = self.show_currencies_list
         self.toolbar.notification_txs_cmd.on_toggled = self.update_notifications_txs
         self.toolbar.notification_messages_cmd.on_toggled = self.update_notifications_messages
-        self.toolbar.currency_cmd.action = self.show_currencies_list
+        self.toolbar.startup_cmd.on_toggled = self.update_app_startup
         self.toolbar.generate_t_cmd.action = self.new_transparent_address
         self.toolbar.generate_z_cmd.action = self.new_private_address
         self.toolbar.import_key_cmd.action = self.show_import_key
@@ -224,6 +229,8 @@ class Menu(Window):
             self.currencies_window = Currency(self)
             self.currencies_window.show()
             self.currency_toggle = True
+        else:
+            self.app.current_window = self.currencies_window
 
     def update_notifications_txs(self, action):
         if self.settings.notification_txs():
@@ -237,6 +244,18 @@ class Menu(Window):
             self.settings.update_settings("notifications_messages", False)
         else:
             self.settings.update_settings("notifications_messages", True)
+
+
+    def update_app_startup(self, action):
+        if self.settings.startup():
+            reg = self.utils.remove_from_startup()
+            self.settings.update_settings("startup", False)
+        else:
+            reg = self.utils.add_to_startup()
+            if reg:
+                self.settings.update_settings("startup", True)
+            else:
+                self.toolbar.startup_cmd.active = False
 
 
     def new_transparent_address(self, action):
@@ -472,24 +491,9 @@ class Menu(Window):
         self.app.add_background_task(self.send_page.update_send_mode)
         self.app.add_background_task(self.messages_page.update_messages_mode)
         self.app.add_background_task(self.mining_page.update_mining_mode)
-            
 
-    async def stop_node_exit(self, action):
-        async def on_result(widget, result):
-            if result is True:
-                self.home_page.clear_cache()
-                await self.commands.stopNode()
-                self.app.exit()
-                
-        if self.mining_page.mining_status:
-            return
-        self.question_dialog(
-            title="Exit app",
-            message="Are you sure you want to stop the node and exit the application ?",
-            on_result=on_result
-        )
 
-    def exit_app(self, action):
+    def exit_app(self, widget):
         def on_result(widget, result):
             if result is True:
                 self.home_page.clear_cache()

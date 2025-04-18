@@ -163,24 +163,28 @@ class StatusIconGtk:
     def __init__(
         self,
         icon: str,
-        on_right_click: Optional[Callable] = None
+        on_right_click: Optional[Callable] = None,
+        on_left_click: Optional[Callable] = None
     ):
-        
-        self.app_path  = get_app_path()
+        self.app_path = get_app_path()
+        self.icon = os.path.join(self.app_path, icon)
 
-        self.icon= os.path.join(self.app_path ,icon)
-        if on_right_click:
-            self.on_right_click = on_right_click
-
+        self.on_right_click = on_right_click
+        self.on_left_click = on_left_click
 
         self.status_icon = Gtk.StatusIcon()
         self.status_icon.set_from_file(self.icon)
 
         self.status_icon.connect("popup-menu", self.on_right_click_event)
+        self.status_icon.connect("activate", self.on_left_click_event)
 
     def on_right_click_event(self, status_icon, button, time):
         if self.on_right_click:
             self.on_right_click(button, time)
+
+    def on_left_click_event(self, status_icon):
+        if self.on_left_click:
+            self.on_left_click()
 
     def show(self):
         self.status_icon.set_visible(True)
