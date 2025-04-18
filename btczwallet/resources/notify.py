@@ -1,6 +1,6 @@
 
 from toga import App, Window
-from ..framework import StatusIconGtk, Gtk
+from ..framework import StatusIconGtk, Gtk, Command
 
 from .client import Client
 
@@ -23,10 +23,15 @@ class Notify(StatusIconGtk):
     def notify_on_click(self, button, time):
         menu = Gtk.Menu()
         
-        stop_exit_cmd = Gtk.MenuItem(label="Stop node")
-        stop_exit_cmd.connect("activate", self.stop_node_exit)
-        exit_cmd = Gtk.MenuItem(label="Exit")
-        exit_cmd.connect("activate", self.exit_app)
+        stop_exit_cmd = Command(
+            title="Stop node",
+            action=self.stop_node_exit
+        )
+
+        exit_cmd = Command(
+            title="Exit",
+            action=self.exit_app
+        )
 
         menu.append(stop_exit_cmd)
         menu.append(exit_cmd)
@@ -36,6 +41,8 @@ class Notify(StatusIconGtk):
 
     
     def show_menu(self):
+        if self.main.import_key_toggle:
+            return
         self.app.current_window = self.main
 
 

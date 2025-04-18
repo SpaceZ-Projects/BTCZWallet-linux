@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 import webbrowser
 import time
+from functools import partial
 
 from toga import App, Box, Label, Window, Button, Table
 from ..framework import Gtk, Gdk, ClipBoard, is_wsl
@@ -353,7 +354,7 @@ class Transactions(Box):
             self.double_click_handler = False
             self.transaction_info_toggle = True
         else:
-            return
+            self.app.current_window = self.transaction_info
 
 
     def create_rows(self, sorted_transactions):
@@ -413,12 +414,22 @@ class Transactions(Box):
                                 notify = NotifyGtk(
                                     title=f"[{category}] : {amount} BTCZ",
                                     message=f"Txid : {txid}",
-                                    duration=10
+                                    duration=10,
+                                    on_press=partial(self.on_notification_click, txid)
                                 )
                                 notify.popup()
                             except Exception:
                                 pass
             await asyncio.sleep(5)
+
+    
+    def on_notification_click(self, txid):
+        if not self.transaction_info_toggle:
+            self.transaction_info = Txid(self, txid)
+            self.transaction_info.show()
+            self.transaction_info_toggle = True
+        else:
+            self.app.current_window = self.transaction_info
 
 
     async def update_transactions(self):
