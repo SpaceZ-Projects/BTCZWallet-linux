@@ -73,6 +73,17 @@ class AppToolbar(Box):
             ]
         )
 
+        self.peer_info_cmd = Command(
+            title="Peer info"
+        )
+
+        self.network_menu = Command(
+            title="Network",
+            sub_commands=[
+                self.peer_info_cmd
+            ]
+        )
+
         self.generate_t_cmd = Command(
             title="Transparent address"
         )
@@ -92,12 +103,20 @@ class AppToolbar(Box):
         self.import_key_cmd = Command(
             title="Import private key"
         )
+        self.export_wallet_cmd = Command(
+            title="Export wallet"
+        )
+        self.import_wallet_cmd = Command(
+            title="Import wallet"
+        )
 
         self.wallet_menu = Command(
             title="Wallet",
             sub_commands=[
                 self.generate_address_cmd,
-                self.import_key_cmd
+                self.import_key_cmd,
+                self.export_wallet_cmd,
+                self.import_wallet_cmd
             ]
         )
 
@@ -136,6 +155,7 @@ class AppToolbar(Box):
             [
                 self.app_menu,
                 self.settings_menu,
+                self.network_menu,
                 self.wallet_menu,
                 self.messages_menu,
                 self.help_menu

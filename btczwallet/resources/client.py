@@ -86,6 +86,13 @@ class Client():
         command = f'{self.bitcoinz_cli_file} getdeprecationinfo'
         return await self._run_command(command)
     
+    async def getPeerinfo(self):
+        """
+        Returns data about each connected network node as a json array of objects.
+        """
+        command = f'{self.bitcoinz_cli_file} getpeerinfo'
+        return await self._run_command(command)
+    
     async def z_getTotalBalance(self):
         """
         Return the total value of funds stored in the node's wallet.
@@ -210,6 +217,20 @@ class Client():
         Retrieve the result and status of an operation which has finished, and then remove the operation from memory.
         """
         command = f'{self.bitcoinz_cli_file} z_getoperationresult "[\\"{operation_ids}\\"]"'
+        return await self._run_command(command)
+    
+    async def z_ExportWallet(self, file_name):
+        """
+        Exports all wallet keys, for taddr and zaddr, in a human-readable format.  Overwriting an existing file is not permitted.
+        """
+        command = f'{self.bitcoinz_cli_file} z_exportwallet "{file_name}"'
+        return await self._run_command(command)
+    
+    async def z_ImportWallet(self, path):
+        """
+        Imports taddr and zaddr keys from a wallet export file.
+        """
+        command = f'{self.bitcoinz_cli_file} z_importwallet "{path}"'
         return await self._run_command(command)
     
     async def ImportPrivKey(self, key:str):
