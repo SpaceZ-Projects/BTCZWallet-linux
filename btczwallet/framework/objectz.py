@@ -7,7 +7,7 @@ from typing import Optional, Callable
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, Gio
 
 
 def get_app_path():
@@ -30,8 +30,11 @@ def is_wsl():
 
 
 if not is_wsl():
-    gi.require_version('Notify', '0.7')
-    from gi.repository import Notify
+    try:
+        gi.require_version('Notify', '0.7')
+        from gi.repository import Notify
+    except Exception:
+        print("Optional: Install 'gir1.2-notify-0.7' to enable desktop notifications.")
     
 
 class ClipBoard:
