@@ -376,8 +376,7 @@ class BTCZSetup(Box):
 
 
     def update_setup_mode(self):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             panel_color = rgb(56,56,56)
         else:
             panel_color = rgb(230,230,230)

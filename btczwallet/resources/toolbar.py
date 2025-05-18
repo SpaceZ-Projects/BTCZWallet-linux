@@ -27,15 +27,18 @@ class AppToolbar(Box):
 
         self.about_cmd = Command(
             title="About",
-            action=self.display_about_dialog
+            action=self.display_about_dialog,
+            tooltip="Information about this application"
         )
         self.exit_cmd = Command(
             title="Exit",
-            action=self.exit_app
+            action=self.exit_app,
+            tooltip="Exit the application and keep node running in background"
         )
         self.stop_exit_cmd = Command(
             title="Stop node",
-            action=self.stop_node_exit
+            action=self.stop_node_exit,
+            tooltip="Stop the node and exit the application"
         )
 
         self.app_menu = Command(
@@ -48,19 +51,23 @@ class AppToolbar(Box):
         )
 
         self.currency_cmd = Command(
-            title="Currency"
+            title="Currency",
+            tooltip="Change your currency display"
         )
 
         self.notification_txs_cmd = CheckCommand(
-            title="Notifications txs"
+            title="Notifications txs",
+            tooltip="Enable/Disable the transactions notifications"
         )
 
         self.notification_messages_cmd = CheckCommand(
-            title="Notifications messages"
+            title="Notifications messages",
+            tooltip="Enable/Disable the messages notifications"
         )
 
         self.startup_cmd = CheckCommand(
-            title="Run on startup"
+            title="Run on startup",
+            tooltip="Enable/Disable app startup on boot"
         )
 
         self.settings_menu = Command(
@@ -74,7 +81,8 @@ class AppToolbar(Box):
         )
 
         self.peer_info_cmd = Command(
-            title="Peer info"
+            title="Peer info",
+            tooltip="Display data about each node connected"
         )
 
         self.network_menu = Command(
@@ -85,11 +93,13 @@ class AppToolbar(Box):
         )
 
         self.generate_t_cmd = Command(
-            title="Transparent address"
+            title="Transparent address (T)",
+            tooltip="Generate a new transparent (T) address"
         )
 
         self.generate_z_cmd = Command(
-            title="Private address"
+            title="Shielded address (Z)",
+            tooltip="Generate a new shielded (Z) address"
         )
 
         self.generate_address_cmd = Command(
@@ -101,13 +111,16 @@ class AppToolbar(Box):
         )
 
         self.import_key_cmd = Command(
-            title="Import private key"
+            title="Import private key",
+            tooltip="Import a private key into your wallet"
         )
         self.export_wallet_cmd = Command(
-            title="Export wallet"
+            title="Export wallet",
+            tooltip="Export your wallet data to a file"
         )
         self.import_wallet_cmd = Command(
-            title="Import wallet"
+            title="Import wallet",
+            tooltip="Import a wallet from a file"
         )
 
         self.wallet_menu = Command(
@@ -121,10 +134,12 @@ class AppToolbar(Box):
         )
 
         self.edit_username_cmd = Command(
-            title="Edit username"
+            title="Edit username",
+            tooltip="Change your messaging username"
         )
         self.backup_messages_cmd = Command(
-            title="Backup messages"
+            title="Backup messages",
+            tooltip="Backup your messages to a file"
         )
 
         self.messages_menu = Command(
@@ -136,11 +151,13 @@ class AppToolbar(Box):
         )
 
         self.check_update_cmd = Command(
-            title="Check update"
+            title="Check update",
+            tooltip="Check for application updates"
         )
 
         self.join_us_cmd = Command(
-            title="Join us"
+            title="Join us",
+            tooltip="Join our community on Discord"
         )
 
         self.help_menu = Command(

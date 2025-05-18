@@ -53,7 +53,6 @@ class Menu(Window):
         
         self.import_key_toggle = None
         self.edit_user_toggle = None
-        self.currency_toggle = None
         self.peer_toggle = None
 
         self.main_box = Box(
@@ -230,12 +229,9 @@ class Menu(Window):
 
 
     def show_currencies_list(self, action):
-        if not self.currency_toggle:
-            self.currencies_window = Currency(self)
-            self.currencies_window.show()
-            self.currency_toggle = True
-        else:
-            self.app.current_window = self.currencies_window
+        self.currencies_window = Currency(self)
+        self.currencies_window.show()
+
 
     def show_peer_info(self, action):
         if not self.peer_toggle:

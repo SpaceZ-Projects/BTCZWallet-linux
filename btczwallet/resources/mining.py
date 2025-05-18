@@ -504,6 +504,8 @@ class Mining(Box):
 
 
     async def update_region_server(self, selection):
+        if not self.pool_region_selection.value:
+            return
         self.selected_server = self.pool_region_selection.value.server
         if not self.selected_server:
             return
@@ -747,8 +749,7 @@ class Mining(Box):
 
 
     def update_mining_mode(self, widget):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             panel_color = rgb(56,56,56)
         else:
             panel_color = rgb(230,230,230)

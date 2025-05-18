@@ -70,7 +70,8 @@ class Command(Gtk.MenuItem):
         self,
         title:str = None,
         action=None,
-        sub_commands=None
+        sub_commands=None,
+        tooltip:str = None
     ):
         super().__init__()
 
@@ -79,6 +80,7 @@ class Command(Gtk.MenuItem):
         self._title = title
         self._action = action
         self._sub_commands = sub_commands
+        self._tooltip = tooltip
 
         self.set_label(self._title)
 
@@ -91,6 +93,9 @@ class Command(Gtk.MenuItem):
                 submenu.append(sub_command)
             submenu.show_all()
             self.set_submenu(submenu)
+        
+        if self._tooltip:
+            self.set_tooltip_text(self._tooltip)
 
     @property
     def action(self):
@@ -113,7 +118,8 @@ class CheckCommand(Gtk.CheckMenuItem):
         self,
         title: str = None,
         on_toggled=None,
-        active=False
+        active=False,
+        tooltip:str = None
     ):
         super().__init__()
 
@@ -121,6 +127,7 @@ class CheckCommand(Gtk.CheckMenuItem):
         self._toggled_handler_id = None
 
         self._title = title
+        self._tooltip = tooltip
 
         self.set_label(self._title)
 
@@ -128,6 +135,9 @@ class CheckCommand(Gtk.CheckMenuItem):
 
         if on_toggled:
             self.connect("toggled", on_toggled)
+
+        if self._tooltip:
+            self.set_tooltip_text(self._tooltip)
 
     @property
     def active(self):

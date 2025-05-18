@@ -2257,8 +2257,7 @@ class Messages(Box):
     
 
     def update_messages_mode(self, widget):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             if self.chat.new_pending_toggle:
                 pending_icon = "images/new_pending_w"
             else:

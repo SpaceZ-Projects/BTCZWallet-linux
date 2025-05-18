@@ -280,8 +280,7 @@ class Wallet(Box):
 
     
     def update_wallet_mode(self, widget):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             background_color = rgb(56,56,56)
         else:
             background_color = rgb(230,230,230)
@@ -471,8 +470,15 @@ class ImportWallet(Window):
         self.position = position_center
         self._impl.native.set_keep_above(True)
         self._impl.native.set_modal(True)
-        
 
+        target = Gtk.TargetEntry.new("text/uri-list", 0, 0)
+        self._impl.native.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            [target],
+            Gdk.DragAction.COPY
+        )
+        self._impl.native.connect("drag-data-received", self.on_drag_data_received)
+        
         self.main_box = Box(
             style=Pack(
                 direction = COLUMN,
@@ -480,13 +486,6 @@ class ImportWallet(Window):
                 alignment = CENTER
             )
         )
-        target = Gtk.TargetEntry.new("text/uri-list", 0, 0)
-        self.main_box._impl.native.drag_dest_set(
-            Gtk.DestDefaults.ALL,
-            [target],
-            Gdk.DragAction.COPY
-        )
-        self.main_box._impl.native.connect("drag-data-received", self.on_drag_data_received)
 
         self.info_label = Label(
             text="(This operation may take up to 10 minutes to complete.)",
@@ -496,19 +495,17 @@ class ImportWallet(Window):
                 padding_top = 5
             )
         )
-        self.file_input = TextInput(
-            value="+ Select / Drag and Drop File",
+        self.file_input = Button(
+            text="+ Select / Drag and Drop File",
             style=Pack(
-                color = GRAY,
                 text_align= CENTER,
                 font_weight = BOLD,
                 font_size = 12,
                 flex = 3,
                 padding_left = 10
             ),
-            readonly=True
+            on_press=self.select_wallet_file
         )
-        self.input_press_event = self.file_input._impl.native.connect("button-press-event", self.select_wallet_file)
         
         self.import_button = Button(
             text="Import",
@@ -560,11 +557,10 @@ class ImportWallet(Window):
             self.import_button
         )
 
-    def select_wallet_file(self, sender, event):
+    def select_wallet_file(self, button):
         def on_result(widget, result):
             if result:
-                self.file_input.value = result
-                self.file_input.style.color = WHITE
+                self.file_input.text = result
         self.open_file_dialog(
             title="Select file",
             on_result=on_result
@@ -576,31 +572,26 @@ class ImportWallet(Window):
         if uris:
             file_uri = uris[0]
             file_path = Gio.file_new_for_uri(file_uri).get_path()
-            self.file_input.value = file_path
-            self.file_input.style.color = WHITE
+            self.file_input.text = file_path
 
 
     def import_button_click(self, button):
-        if self.file_input.value == "+ Select / Drag and Drop File":
+        if self.file_input.text == "+ Select / Drag and Drop File":
             self.error_dialog(
                 "Missing File",
                 "Please select a wallet file to proceed."
             )
             return
 
-        extension = os.path.splitext(self.file_input.value)[1]
+        extension = os.path.splitext(self.file_input.text)[1]
         if extension:
             self.error_dialog(
                 "Invalid File Format",
                 "Unsupported file type. Please select a valid wallet file."
             )
             return
-        self.file_input._impl.native.disconnect(self.input_press_event)
-        self.main_box._impl.native.drag_dest_set(
-            Gtk.DestDefaults.ALL,
-            [],
-            Gdk.DragAction.COPY
-        )
+        self._impl.native.drag_dest_set(0,[],0)
+        self.file_input.enabled = False
         self.import_button.enabled = False
         self.cancel_button.enabled = False
         self.main.import_key_toggle = True
@@ -608,7 +599,7 @@ class ImportWallet(Window):
 
 
     async def import_wallet_file(self, widget):
-        file_path = self.file_input.value
+        file_path = self.file_input.text
         await self.commands.z_ImportWallet(file_path) 
         await self.update_import_window()
 

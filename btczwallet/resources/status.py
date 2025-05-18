@@ -73,7 +73,7 @@ class AppStatusBar(Box):
                 else:
                     deprecation = "N/A"
 
-            status_text = f"Blocks : {blocks} | Date : {mediantime_date} | Sync : %{float(sync_percentage):.2f} | NetHash : {netsol} Sol/s | Conns : {connection_count} | Dep : {deprecation} | Size : {int(bitcoinz_size)} MB"
+            status_text = f"Blocks : {blocks} | Date : {mediantime_date} | Sync : {float(sync_percentage):.2f}% | NetHash : {netsol} Sol/s | Conns : {connection_count} | Dep : {deprecation} | Size : {int(bitcoinz_size)} MB"
             self.statusbar.add(status_text)
 
             await asyncio.sleep(5)

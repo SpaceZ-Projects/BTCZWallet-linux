@@ -384,8 +384,7 @@ class Receive(Box):
     
 
     def update_recieve_mode(self, widget):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             copy_icon = "images/copy_w"
             key_icon = "images/key_w"
             explorer_icon = "images/explorer_w"

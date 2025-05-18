@@ -1130,8 +1130,7 @@ class Send(Box):
 
 
     def update_send_mode(self, widegt):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             panel_color = rgb(56,56,56)
         else:
             panel_color = rgb(230,230,230)
