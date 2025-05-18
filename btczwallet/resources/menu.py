@@ -2,6 +2,7 @@
 import asyncio
 import webbrowser
 import shutil
+from datetime import datetime
 
 from toga import (
     Window, Box, Button
@@ -15,7 +16,7 @@ from toga.constants import (
 
 from .client import Client
 from .utils import Utils
-from .wallet import Wallet, ImportKey
+from .wallet import Wallet, ImportKey, ImportWallet
 from .home import Home, Currency
 from .txs import Transactions
 from .receive import Receive
@@ -26,6 +27,7 @@ from .status import AppStatusBar
 from .toolbar import AppToolbar
 from .storage import Storage
 from .settings import Settings
+from .network import Peer
 
 if not is_wsl():
     from .notify import Notify
@@ -50,9 +52,9 @@ class Menu(Window):
         Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.on_change_mode)
         
         self.import_key_toggle = None
-        self.import_window_toggle = None
         self.edit_user_toggle = None
         self.currency_toggle = None
+        self.peer_toggle = None
 
         self.main_box = Box(
             style=Pack(
@@ -192,7 +194,7 @@ class Menu(Window):
             self.statusicon.show()
         except Exception:
             pass
-        self.app.add_background_task(self.transactions_page.waiting_new_transactions)
+        self.app.add_background_task(self.transactions_page.update_transactions)
         await asyncio.sleep(1)
         await self.messages_page.gather_unread_memos()
 
@@ -215,9 +217,12 @@ class Menu(Window):
         self.toolbar.notification_txs_cmd.on_toggled = self.update_notifications_txs
         self.toolbar.notification_messages_cmd.on_toggled = self.update_notifications_messages
         self.toolbar.startup_cmd.on_toggled = self.update_app_startup
+        self.toolbar.peer_info_cmd.action = self.show_peer_info
         self.toolbar.generate_t_cmd.action = self.new_transparent_address
         self.toolbar.generate_z_cmd.action = self.new_private_address
         self.toolbar.import_key_cmd.action = self.show_import_key
+        self.toolbar.export_wallet_cmd.action = self.export_wallet
+        self.toolbar.import_wallet_cmd.action = self.show_import_wallet
         self.toolbar.edit_username_cmd.action = self.edit_messages_username
         self.toolbar.backup_messages_cmd.action = self.backup_messages
         self.toolbar.check_update_cmd.action = self.check_app_version
@@ -231,6 +236,15 @@ class Menu(Window):
             self.currency_toggle = True
         else:
             self.app.current_window = self.currencies_window
+
+    def show_peer_info(self, action):
+        if not self.peer_toggle:
+            peer_window = Peer(self)
+            peer_window.show()
+            self.peer_window = peer_window
+            self.peer_toggle = True
+        else:
+            self.app.current_window = self.peer_window
 
     def update_notifications_txs(self, action):
         if self.settings.notification_txs():
@@ -314,28 +328,61 @@ class Menu(Window):
 
 
     def show_import_key(self, action):
-        if not self.import_window_toggle:
-            self.import_window = ImportKey(self)
-            self.import_window.close_button.on_press = self.close_import_key
-            self.import_window.show()
-            self.import_window_toggle = True
+        self.import_window = ImportKey(self)
+        self.import_window.show()
+
+
+    def export_wallet(self, action):
+        def on_result(widget, result):
+            if result is True:
+                self.set_export_dir()
+        export_dir = self.utils.verify_export_dir()
+        if export_dir:
+            self.app.add_background_task(self.run_export_wallet)
         else:
-            self.app.current_window = self.import_window
+            self.question_dialog(
+                title="Missing Export Dir",
+                message="The '-exportdir' option is not configured in your bitcoinz.conf file.\n"
+                        "Would you like to configure it ?",
+                on_result=on_result
+            )
+
+    
+    def set_export_dir(self):
+        def on_result(widget, result):
+            if result is not None:
+                self.utils.update_config(result)
+                self.question_dialog(
+                    title="Export Directory Set",
+                    message="Your export folder has been successfully saved. Would you like to restart your node now to apply this change?",
+                    on_result=self.restart_node
+                )
+        self.select_folder_dialog(
+            title="Select Folder",
+            on_result=on_result
+        )
 
 
-    async def update_wallet(self):
-        self.import_window.close()
-        await self.transactions_page.update_transactions()
-        await self.receive_page.update_addresses()
-        await self.send_page.update_addresses()
-        await self.mining_page.update_addresses()
-        self.import_key_toggle = None
-        self.import_window_toggle = None
+    async def restart_node(self, widget, result):
+        if result is True:
+            restart = self.utils.restart_app()
+            if restart:
+                await self.commands.stopNode()
+                self.app.exit()
 
 
-    def close_import_key(self, button):
-        self.import_window_toggle = None
-        self.import_window.close()
+    async def run_export_wallet(self, widget):
+        file_name = f"wallet{datetime.today().strftime('%d%m%Y%H%M%S')}"
+        exported_file, error_message = await self.commands.z_ExportWallet(file_name)
+        if exported_file and error_message is None:
+            self.info_dialog(
+                title="Wallet Exported Successfully",
+                message=f"Your wallet has been exported as '{exported_file}'."
+            )
+
+    def show_import_wallet(self, action):
+        self.import_window = ImportWallet(self)
+        self.import_window.show()
 
 
     def edit_messages_username(self, action):

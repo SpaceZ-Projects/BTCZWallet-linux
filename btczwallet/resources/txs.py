@@ -380,7 +380,23 @@ class Transactions(Box):
         self.no_transaction_toggle = True
 
 
-    async def waiting_new_transactions(self, widget):
+    async def reload_transactions(self):
+        if self.transactions_data:
+            self.transactions_data.clear()
+        sorted_transactions = await self.get_transactions(
+            self.transactions_count,0
+        )
+        if sorted_transactions:
+            self.create_rows(sorted_transactions)
+            if self.no_transaction_toggle:
+                self.remove(self.no_transaction)
+                self.add(self.transactions_table)
+            else:
+                if self.transactions_toggle:
+                    self.transactions_table.data = self.transactions_data
+
+
+    async def update_transactions(self, widget):
         sorted_transactions = await self.get_transactions(
             self.transactions_count,0
         )
@@ -430,21 +446,6 @@ class Transactions(Box):
             self.transaction_info_toggle = True
         else:
             self.app.current_window = self.transaction_info
-
-
-    async def update_transactions(self):
-        if self.transactions_toggle:
-            sorted_transactions = await self.get_transactions(
-                self.transactions_count,0
-            )
-            if sorted_transactions:
-                if self.no_transaction_toggle:
-                    self.remove(self.no_transaction)
-                    self.add(self.transactions_table)
-                else:
-                    self.transactions_table.data.clear()
-                self.create_rows(sorted_transactions)
-                self.transactions_table.data = self.transactions_data
 
 
     def add_transaction(self, index, row):

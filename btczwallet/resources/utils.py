@@ -6,6 +6,7 @@ import py7zr
 import os
 import shutil
 import qrcode
+import subprocess
 
 from ..framework import Gtk
 from toga import App
@@ -78,6 +79,38 @@ class Utils():
         bitcoinz_path = self.get_bitcoinz_path()
         config_file_path = os.path.join(bitcoinz_path, config_file)
         return config_file_path
+    
+    def verify_export_dir(self):
+        config_file_path = self.get_config_path()
+        with open(config_file_path, 'r') as config:
+            lines = config.readlines()
+            for line in lines:
+                if line.startswith("exportdir"):
+                    return True
+            return None
+            
+    def update_config(self, path):
+        config_file_path = self.get_config_path()
+        updated_lines = []
+        with open(config_file_path, 'r') as config:
+            lines = config.readlines()
+        key_found = False
+        for line in lines:
+            stripped_line = line.strip()
+            if "=" in stripped_line:
+                current_key, _ = map(str.strip, stripped_line.split('=', 1))
+                if current_key == "exportdir":
+                    key_found = True
+                    if path is not None and path != "":
+                        updated_lines.append(f"exportdir={path}\n")
+                else:
+                    updated_lines.append(line)
+            else:
+                updated_lines.append(line)
+        if not key_found and path is not None and path != "":
+            updated_lines.append(f"exportdir={path}\n")
+        with open(config_file_path, 'w') as file:
+            file.writelines(updated_lines)
     
     def windows_screen_center(self, size):
         screen_size = self.app.screens[0].size
@@ -437,3 +470,20 @@ X-GNOME-Autostart-enabled=true
         except Exception as e:
             print(f"Failed to remove autostart file: {e}")
         return None
+    
+
+    def restart_app(self):
+        shell_script = f"""#!/bin/bash
+sleep 10
+btczwallet &
+rm -- "$0"
+"""
+        script_path = os.path.join(self.app.paths.cache, 'restart_app.sh')
+        print(script_path)
+        with open(script_path, 'w') as file:
+            file.write(shell_script)
+        
+        os.chmod(script_path, 0o755)
+        subprocess.Popen([str(script_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        return True

@@ -2,8 +2,8 @@
 from toga import (
     App, Window, Box, ImageView, Label
 )
-from .framework import Gtk
-from toga.colors import GRAY
+from .framework import Gtk, Gdk
+from toga.colors import GRAY, YELLOW
 from toga.style.pack import Pack
 from toga.constants import RIGHT, BOLD, COLUMN, ROW
 
@@ -59,6 +59,11 @@ class BitcoinZGUI(Window):
                 flex = 1
             )
         )
+        self.app_version._impl.native.set_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        self.app_version._impl.native.set_has_window(True)
+        self.app_version._impl.native.connect("enter-notify-event", self.app_version_mouse_enter)
+        self.app_version._impl.native.connect("leave-notify-event", self.app_version_mouse_leave)
+
         self.startup = BTCZSetup(
             self.app,
             self
@@ -77,6 +82,12 @@ class BitcoinZGUI(Window):
 
     def on_change_mode(self, settings, param_spec):
         self.startup.update_setup_mode()
+
+    def app_version_mouse_enter(self, widget, event):
+        self.app_version.style.color = YELLOW
+
+    def app_version_mouse_leave(self, widget, event):
+        self.app_version.style.color = GRAY
 
 
 class BitcoinZWallet(App):

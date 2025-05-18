@@ -669,7 +669,7 @@ class Mining(Box):
             self.pool_selection.items.insert(1, pool)
 
     
-    async def update_addresses(self):
+    async def reload_addresses(self):
         if self.mining_toggle:
             transparent_addresses = await self.get_transparent_addresses()
             self.address_selection.items.clear()
