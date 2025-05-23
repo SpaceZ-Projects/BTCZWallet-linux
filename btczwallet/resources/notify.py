@@ -1,4 +1,6 @@
 
+import psutil
+
 from toga import App, Window
 from ..framework import StatusIconGtk, Gtk, Command
 
@@ -60,16 +62,23 @@ class Notify(StatusIconGtk):
         )
 
 
-    async def stop_node(self, widget):
-        await self.commands.stopNode()
-        self.home_page.clear_cache()
-        self.app.exit()
+    def stop_tor(self):
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                if proc.info['name'] == "tor_binary":
+                    proc.kill()
+        except Exception as e:
+            pass
 
 
     def stop_node_exit(self, action):
-        def on_result(widget, result):
+        async def on_result(widget, result):
             if result is True:
-                self.app.add_background_task(self.stop_node)
+                self.home_page.bitcoinz_curve.image = None
+                self.home_page.clear_cache()
+                self.stop_tor()
+                await self.commands.stopNode()
+                self.app.exit()
         if self.mining_page.mining_status:
             return
         self.main.question_dialog(

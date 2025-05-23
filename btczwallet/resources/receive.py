@@ -2,12 +2,13 @@
 import asyncio
 import json
 import webbrowser
+import time
 
 from toga import (
     App, Box, Label, ImageView, Window,
     Button, Table
 )
-from ..framework import ClipBoard
+from ..framework import ClipBoard, Gtk, Gdk
 from toga.style.pack import Pack
 from toga.constants import COLUMN, ROW, CENTER, BOLD, TOP
 from toga.colors import rgb, GRAY, BLACK, YELLOW, TRANSPARENT
@@ -112,6 +113,19 @@ class Receive(Box):
             ),
             on_select=self.get_address_balance
         )
+        addresses_table_widgets = self.addresses_table._impl.native.get_child()
+        addresses_table_widgets.connect("button-press-event", self.addresses_table_context_event)
+        self.addresses_table_context_menu = Gtk.Menu()
+        copy_address_item = Gtk.MenuItem(label="Copy address")
+        copy_address_item.connect("activate", self.copy_address_clipboard)
+        copy_key_item = Gtk.MenuItem(label="Copy private key")
+        copy_key_item.connect("activate", self.copy_key_clipboard)
+        explorer_address_item = Gtk.MenuItem(label="View address in explorer")
+        explorer_address_item.connect("activate", self.open_address_explorer)
+        self.addresses_table_context_menu.append(copy_address_item)
+        self.addresses_table_context_menu.append(copy_key_item)
+        self.addresses_table_context_menu.append(explorer_address_item)
+        self.addresses_table_context_menu.show_all()
 
         self.address_info = Box(
             style=Pack(
@@ -210,28 +224,31 @@ class Receive(Box):
             self.address_value_box.add(
                 self.address_value
             )
-            self.address_panel.add(
-                self.copy_address,
-                self.copy_key,
-                self.explorer_address
-            )
+            
             self.add(
                 self.addresses_box
             )
             self.recieve_toggle = True
-            self.transparent_button_click(None)
+            await self.transparent_button_click(None)
+
+
+    def addresses_table_context_event(self, widget, event):
+        if event.button == Gdk.BUTTON_SECONDARY:
+            self.addresses_table_context_menu.popup_at_pointer(event)
+            return True
+        return False
     
 
-    def transparent_button_click(self, button):
+    async def transparent_button_click(self, button):
         self.clear_buttons()
         self.transparent_toggle = True
         self.transparent_button.style.color = BLACK
         self.transparent_button.style.background_color = YELLOW
         self.transparent_addresses_rows.clear()
         self.transparent_addresses.clear()
-        self.app.add_background_task(self.display_transparent_addresses)
+        await self.display_transparent_addresses()
 
-    async def display_transparent_addresses(self, widget):
+    async def display_transparent_addresses(self):
         transparent_addresses = await self.get_transparent_addresses()
         for address in transparent_addresses:
             row = {
@@ -240,18 +257,22 @@ class Receive(Box):
             self.transparent_addresses_rows.append(row)
             self.transparent_addresses.append(address)
         self.addresses_table.data = self.transparent_addresses_rows
+        addresses_table_widgets = self.addresses_table._impl.native.get_child()
+        selection = addresses_table_widgets.get_selection()
+        path = Gtk.TreePath(0)
+        selection.select_path(path)
 
-    def private_button_click(self, button):
+    async def private_button_click(self, button):
         self.clear_buttons()
         self.private_toggle = True
         self.private_button.style.color = BLACK
         self.private_button.style.background_color = rgb(114,137,218)
         self.private_addresses_rows.clear()
         self.private_addresses.clear()
-        self.app.add_background_task(self.display_private_addresses)
+        await self.display_private_addresses()
 
 
-    async def display_private_addresses(self, widget):
+    async def display_private_addresses(self):
         private_addresses = await self.get_private_addresses()
         if private_addresses:
             for address in private_addresses:
@@ -265,6 +286,12 @@ class Receive(Box):
                 "addresses": ""
             }]
         self.addresses_table.data = self.private_addresses_rows
+        addresses_table_widgets = self.addresses_table._impl.native.get_child()
+        selection = addresses_table_widgets.get_selection()
+        model = addresses_table_widgets.get_model()
+        if model and len(model) > 0:
+            path = Gtk.TreePath(0)
+            selection.select_path(path)
 
     async def update_addresses(self):
         if self.recieve_toggle:
@@ -323,7 +350,7 @@ class Receive(Box):
             self.address_balance.text = f"Balance : {balance}"
 
 
-    def copy_address_clipboard(self, button):
+    def copy_address_clipboard(self, centext):
         if not self.addresses_table.selection:
             return
         row = self.addresses_table.selection
@@ -334,7 +361,7 @@ class Receive(Box):
         )
 
 
-    def open_address_explorer(self, button):
+    def open_address_explorer(self, centext):
         if not self.addresses_table.selection:
             return
         url = "https://explorer.btcz.rocks/address/"
@@ -343,9 +370,13 @@ class Receive(Box):
         webbrowser.open(transaction_url)
 
 
-    async def copy_key_clipboard(self, button):
+    def copy_key_clipboard(self, centext):
         if not self.addresses_table.selection:
             return
+        self.app.add_background_task(self.get_address_key)
+
+
+    async def get_address_key(self, widget):
         row = self.addresses_table.selection
         if self.transparent_toggle:
             result, _= await self.commands.DumpPrivKey(row.addresses)
