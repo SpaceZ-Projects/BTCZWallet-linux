@@ -71,7 +71,9 @@ class Command(Gtk.MenuItem):
         title:str = None,
         action=None,
         sub_commands=None,
-        tooltip:str = None
+        tooltip:str = None,
+        shortcut: str = None,
+        accel_group: Gtk.AccelGroup = None
     ):
         super().__init__()
 
@@ -81,6 +83,8 @@ class Command(Gtk.MenuItem):
         self._action = action
         self._sub_commands = sub_commands
         self._tooltip = tooltip
+        self._shortcut = shortcut
+        self._accel_group = accel_group
 
         self.set_label(self._title)
 
@@ -96,6 +100,13 @@ class Command(Gtk.MenuItem):
         
         if self._tooltip:
             self.set_tooltip_text(self._tooltip)
+
+        if self._shortcut and self._accel_group:
+            key, mod = Gtk.accelerator_parse(self._shortcut)
+            self.add_accelerator(
+                "activate", self._accel_group,
+                key, mod, Gtk.AccelFlags.VISIBLE
+            )
 
     @property
     def action(self):
@@ -210,8 +221,7 @@ class NotifyGtk():
         message: str,
         duration: int,
         on_press: Optional[Callable] = None
-    ):  
-        self.app_path  = get_app_path()
+    ):
 
         self.title = title
         self.message = message

@@ -7,6 +7,7 @@ import os
 import shutil
 import qrcode
 import subprocess
+import shutil
 
 from ..framework import Gtk
 from toga import App
@@ -142,6 +143,20 @@ class Utils():
         return total_size_gb
     
 
+    def get_tor_files(self):
+        required_files = [
+            'tor_binary',
+            'geoip',
+            'geoip6'
+        ]
+        missing_files = []
+        for file in required_files:
+            file_path = os.path.join(self.app_data, file)
+            if not os.path.exists(file_path):
+                missing_files.append(file)
+        return missing_files
+    
+
     def get_binary_files(self):
         required_files = [
             'bitcoinzd',
@@ -192,6 +207,66 @@ class Utils():
         if os.path.exists(miner_path):
             return miner_path, url, zip_file
         return None, url, zip_file
+    
+
+    async def fetch_tor_files(self, label, progress_bar):
+        file_name = "tor-expert-bundle-linux-x86_64-14.5.2.tar.gz"
+        url = "https://archive.torproject.org/tor-package-archive/torbrowser/14.5.2/"
+        text = "Downloading Tor bundle...%"
+        destination = os.path.join(self.app_data, file_name)
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url + file_name, timeout=None) as response:
+                    if response.status == 200:
+                        total_size = int(response.headers.get('content-length', 0))
+                        chunk_size = 512
+                        downloaded_size = 0
+                        self.file_handle = open(destination, 'wb')
+                        async for chunk in response.content.iter_chunked(chunk_size):
+                            if not chunk:
+                                break
+                            self.file_handle.write(chunk)
+                            downloaded_size += len(chunk)
+                            progress = int(downloaded_size / total_size * 100)
+                            self.update_status_label(label, text, progress)
+                            progress_bar.value = progress
+                        self.file_handle.close()
+                        self.file_handle = None
+                        await session.close()
+                        def extract_filter(tarinfo, fileobj):
+                            return tarinfo
+                        with tarfile.open(destination, "r:gz") as tar:
+                            tar.extractall(path=self.app_data, filter=extract_filter)
+                        tor_dir = os.path.join(self.app_data, "tor")
+                        tor_exe = os.path.join(tor_dir, "tor")
+                        dest_tor_exe = os.path.join(self.app_data, "tor_binary")
+                        if os.path.exists(dest_tor_exe):
+                            os.remove(dest_tor_exe)
+                        shutil.move(tor_exe, dest_tor_exe)
+                        data_dir = os.path.join(self.app_data, "data")
+                        docs_dir = os.path.join(self.app_data, "docs")
+                        debug_dir = os.path.join(self.app_data, "debug")
+                        geoip_file = os.path.join(data_dir, "geoip")
+                        dest_geoip = os.path.join(self.app_data, "geoip")
+                        if os.path.exists(dest_geoip):
+                            os.remove(dest_geoip)
+                        shutil.move(geoip_file, dest_geoip)
+                        geoip6_file = os.path.join(data_dir, "geoip6")
+                        dest_geoip6 = os.path.join(self.app_data, "geoip6")
+                        if os.path.exists(dest_geoip6):
+                            os.remove(dest_geoip6)
+                        shutil.move(geoip6_file, dest_geoip6)
+                        for path in [tor_dir, data_dir, docs_dir, debug_dir]:
+                            if os.path.isdir(path):
+                                shutil.rmtree(path)
+                        if os.path.exists(destination):
+                            os.remove(destination)
+        except RuntimeError as e:
+            print(f"RuntimeError caught: {e}")
+        except aiohttp.ClientError as e:
+            print(f"HTTP Error: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
     
 
     async def fetch_binary_files(self, label, progress_bar):

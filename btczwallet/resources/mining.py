@@ -5,6 +5,7 @@ import psutil
 import re
 import os
 import aiohttp
+from aiohttp_socks import ProxyConnector, ProxyConnectionError
 
 from toga import (
     App, Box, Label, Selection, TextInput,
@@ -19,6 +20,7 @@ from toga.colors import (
 from .utils import Utils
 from .units import Units
 from .client import Client
+from .settings import Settings
 
 
 class Mining(Box):
@@ -36,6 +38,7 @@ class Mining(Box):
         self.utils = Utils(self.app)
         self.units = Units(self.app)
         self.commands = Client(self.app)
+        self.settings = Settings(self.app)
 
         self.mining_toggle = None
         self.selected_miner = None
@@ -46,6 +49,7 @@ class Mining(Box):
         self.mining_status = None
         self.pool_api = None
         self.miner_command = None
+        self.tor_enabled = self.settings.tor_network()
 
         mode = self.utils.get_sys_mode()
         if mode:
@@ -544,14 +548,18 @@ class Mining(Box):
         if miner_path:
             if self.selected_miner == "MiniZ":
                 if self.selected_pool == "Zpool":
-                    self.miner_command = [f'{miner_path} --url {self.selected_address}.{self.worker_name}@{self.selected_server} --pass c=BTCZ,zap=BTCZ --pers auto']
+                    self.miner_command = f'{miner_path} --url {self.selected_address}.{self.worker_name}@{self.selected_server} --pass c=BTCZ,zap=BTCZ --pers auto'
                 else:
-                    self.miner_command = [f'{miner_path} --url {self.selected_address}.{self.worker_name}@{self.selected_server} --pass x --par 144,5 --pers BitcoinZ']
+                    self.miner_command = f'{miner_path} --url {self.selected_address}.{self.worker_name}@{self.selected_server} --pass x --par 144,5 --pers BitcoinZ'
+                if self.tor_enabled:
+                    self.miner_command += ' --socks 127.0.0.1:9051'
             elif self.selected_miner == "Gminer":
                 if self.selected_pool == "Zpool":
-                    self.miner_command = [f'{miner_path} --server {self.selected_server} --user {self.selected_address}.{self.worker_name} --pass c=BTCZ,zap=BTCZ --algo 144_5 --pers auto']
+                    self.miner_command = f'{miner_path} --server {self.selected_server} --user {self.selected_address}.{self.worker_name} --pass c=BTCZ,zap=BTCZ --algo 144_5 --pers auto'
                 else:
-                    self.miner_command = [f'{miner_path} --server {self.selected_server} --user {self.selected_address}.{self.worker_name} --pass x --algo 144_5 --pers BitcoinZ']
+                    self.miner_command = f'{miner_path} --server {self.selected_server} --user {self.selected_address}.{self.worker_name} --pass x --algo 144_5 --pers BitcoinZ'
+                if self.tor_enabled:
+                    self.miner_command += ' --proxy 127.0.0.1:9051'    
             self.disable_mining_inputs()
             self.app.add_background_task(self.start_mining_command)
             self.mining_status = True
@@ -561,9 +569,10 @@ class Mining(Box):
     async def start_mining_command(self, widget):
         self.update_mining_button("stop")
         self.ouputs_box.clear()
+        command = [self.miner_command]
         try:
             self.process = await asyncio.create_subprocess_shell(
-                *self.miner_command,
+                *command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
@@ -609,7 +618,11 @@ class Mining(Box):
 
     async def fetch_miner_stats(self, widget):
         api = self.pool_api + self.selected_address
-        async with aiohttp.ClientSession() as session:
+        if self.tor_enabled:
+            connector = ProxyConnector.from_url('socks5://127.0.0.1:9051')
+        else:
+            connector = None
+        async with aiohttp.ClientSession(connector=connector) as session:
             while True:
                 if not self.mining_status:
                     return
@@ -643,12 +656,16 @@ class Mining(Box):
                                 for hashrate in total_hashrates:
                                     for algo, rate in hashrate.items():
                                         self.solutions_value.text = f"{rate:.2f} Sol/s"
+                                        rate = self.units.solution_to_hash(rate)
+                                        estimated_24h = await self.units.estimated_earn(24, rate)
+                                        self.estimated_value.text = f"{int(estimated_24h)} /Day"
 
                         self.totalshares_value.text = f"{total_share:.2f}"
                         self.balance_value.text = self.units.format_balance(balance)
                         self.immature_value.text = self.units.format_balance(immature_bal)
                         self.paid_value.text = self.units.format_balance(paid)
-
+                except ProxyConnectionError:
+                    print("Proxy connection failed.")
                 except aiohttp.ClientError as e:
                     print(f"Error while fetching data: {e}")
                 except Exception as e:

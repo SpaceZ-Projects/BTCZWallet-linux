@@ -4,6 +4,7 @@ import aiohttp
 from datetime import datetime
 import os
 import json
+from aiohttp_socks import ProxyConnector, ProxyConnectionError
 
 from toga import (
     App, Window, Box, Label, ImageView,
@@ -418,13 +419,20 @@ class Home(Box):
 
     async def fetch_marketcap(self):
         api = "https://api.coingecko.com/api/v3/coins/bitcoinz"
+        tor_enabled = self.settings.tor_network()
+        if tor_enabled:
+            connector = ProxyConnector.from_url('socks5://127.0.0.1:9051')
+        else:
+            connector = None
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=connector) as session:
                 headers={'User-Agent': 'Mozilla/5.0'}
                 async with session.get(api, headers=headers) as response:
                     response.raise_for_status()
                     data = await response.json()
                     return data
+        except ProxyConnectionError:
+            return None
         except Exception as e:
             print(f"Error occurred during fetch: {e}")
             return None
@@ -471,7 +479,12 @@ class Home(Box):
     async def update_marketchar(self, widget):
         while True:
             self.data = await self.curve.fetch_marketchart()
-            if self.data:
+            if not self.data:
+                self.main.error_dialog(
+                    title="Request Error",
+                    message="Too many requests. The market cap will be updated in the next 10 minutes."
+                )
+            else:
                 curve_image = self.curve.create_curve(self.data)
                 if curve_image:
                     self.bitcoinz_curve.image = curve_image

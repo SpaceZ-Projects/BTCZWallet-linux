@@ -4,6 +4,8 @@ import subprocess
 import json
 from datetime import datetime
 import os
+import aiohttp
+from aiohttp_socks import ProxyConnector, ProxyConnectionError
 
 from toga import (
     App, Box, Label, ProgressBar, Window
@@ -16,6 +18,7 @@ from .utils import Utils
 from .client import Client
 from .menu import Menu
 from .units import Units
+from .settings import Settings
 
 
 class BTCZSetup(Box):
@@ -33,10 +36,12 @@ class BTCZSetup(Box):
         self.utils = Utils(self.app)
         self.units = Units(self.app)
         self.commands = Client(self.app)
+        self.settings = Settings(self.app)
         self.app_data = self.app.paths.data
 
         self.node_status = None
         self.blockchaine_index = None
+        self.tor_enabled = None
 
         mode = self.utils.get_sys_mode()
         if mode:
@@ -75,7 +80,7 @@ class BTCZSetup(Box):
         self.status_box.add(self.status_label)
         self.progress_box.add(self.progress_bar)
         self.add(self.status_box, self.progress_box)
-        self.app.add_background_task(self.verify_binary_files)
+        self.app.add_background_task(self.verify_network)
 
 
     def update_info_box(self):
@@ -196,7 +201,119 @@ class BTCZSetup(Box):
             self.sync_value
         )
 
-    async def verify_binary_files(self, widget):
+
+    async def verify_network(self, widget):
+        async def on_result(widget, result):
+            if result is True:
+                self.settings.update_settings("tor_network", True)
+                self.main.network_status.style.color = rgb(114,137,218)
+                self.main.network_status.text = "Tor : Enabled"
+                await self.verify_tor_files()
+            if result is False:
+                self.settings.update_settings("tor_network", False)
+                await self.verify_binary_files()
+        await asyncio.sleep(1)
+        self.tor_enabled = self.settings.tor_network()
+        if self.tor_enabled is None:
+            self.main.network_status.style.color = GRAY
+            self.main.network_status.text = "Tor : Disabled"
+            self.main.question_dialog(
+                title="Tor Network",
+                message="This is your first time running the app.\nWould you like to enable the Tor network ?",
+                on_result=on_result
+            )
+        else:
+            if self.tor_enabled is True:
+                self.main.network_status.style.color = rgb(114,137,218)
+                self.main.network_status.text = "Tor : Enabled"
+                await self.verify_tor_files()
+            elif self.tor_enabled is False:
+                self.main.network_status.style.color = GRAY
+                self.main.network_status.text = "Tor : Disabled"
+                await self.verify_binary_files()
+
+
+    async def verify_tor_files(self):
+        self.status_label.text = "Verify Tor files..."
+        await asyncio.sleep(1)
+        missing_files = self.utils.get_tor_files()
+        if missing_files:
+            self.status_label.text = "Downloading Tor bundle..."
+            await self.utils.fetch_tor_files(
+                self.status_label,
+                self.progress_bar
+            )
+        self.app.add_background_task(self.run_tor)
+
+
+    async def run_tor(self, widget):
+
+        tor_data = os.path.join(self.app_data, "tor_data")
+        tor_binary = os.path.join(self.app_data, "tor_binary")
+        geoip = os.path.join(self.app_data, "geoip")
+        geoip6 = os.path.join(self.app_data, "geoip6")
+        try:
+            tor_running = await self.is_tor_alive()
+            if not tor_running:
+                self.status_label.text = "Launching Tor..."
+                await asyncio.sleep(1)
+                command = (
+                    f'"{tor_binary}" '
+                    f'--SocksPort 9051 '
+                    f'--ControlPort 9151 '
+                    f'--CookieAuthentication 1 '
+                    f'--GeoIPFile "{geoip}" '
+                    f'--GeoIPv6File "{geoip6}" '
+                    f'--DataDirectory "{tor_data}"'
+                )
+                self.tor_process = await asyncio.create_subprocess_shell(
+                    command,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT
+                )
+                self.status_label.text = "Waiting for Tor to initialize..."
+                try:
+                    result = await self.wait_tor_bootstrap()
+                    if result:
+                        tor_running = await self.is_tor_alive()
+                        if tor_running:
+                            self.status_label.text = "Tor started successfully."
+                            await asyncio.sleep(1)
+                            await self.verify_binary_files()
+                        else:
+                            self.status_label.text = "Failed to communicate with Tor."
+                except asyncio.TimeoutError:
+                    self.status_label.text = "Tor startup timed out."
+            else:
+                await self.verify_binary_files()
+
+        except Exception as e:
+            self.status_label.text = "Tor failed to start properly."
+
+
+    async def wait_tor_bootstrap(self):
+        while True:
+            line = await self.tor_process.stdout.readline()
+            if not line:
+                break
+            decoded = line.decode().strip()
+            if "Bootstrapped 100% (done): Done" in decoded:
+                return True
+
+
+    async def is_tor_alive(self):
+        try:
+            connector = ProxyConnector.from_url(f'socks5://127.0.0.1:9051')
+            async with aiohttp.ClientSession(connector=connector) as session:
+                async with session.get('http://check.torproject.org', timeout=10) as response:
+                    await response.text()
+                    return True
+        except ProxyConnectionError as e:
+            return None
+
+
+
+    async def verify_binary_files(self):
         await asyncio.sleep(1)
         missing_files = self.utils.get_binary_files()
         if missing_files:
@@ -273,7 +390,10 @@ class BTCZSetup(Box):
         self.status_label.text = "Starting node..."
         bitcoinzd = "bitcoinzd"
         node_file = os.path.join(self.app_data, bitcoinzd)
-        command = [node_file]
+        if self.settings.tor_network():
+            command = [node_file, '-proxy=127.0.0.1:9051']
+        else:
+            command = [node_file]
         try:
             self.process = await asyncio.create_subprocess_exec(
                     *command,

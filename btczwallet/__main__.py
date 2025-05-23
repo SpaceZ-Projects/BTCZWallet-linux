@@ -5,7 +5,7 @@ from toga import (
 from .framework import Gtk, Gdk
 from toga.colors import GRAY, YELLOW
 from toga.style.pack import Pack
-from toga.constants import RIGHT, BOLD, COLUMN, ROW
+from toga.constants import RIGHT, BOLD, COLUMN, ROW, LEFT
 
 from .resources import BTCZSetup, Utils
 
@@ -43,11 +43,7 @@ class BitcoinZGUI(Window):
                 direction = ROW
             )
         )
-        self.empty_box = Box(
-            style=Pack(
-                flex = 9
-            )
-        )
+
         self.app_version = Label(
             text=f"v{self.app.version}",
             style=Pack(
@@ -64,6 +60,17 @@ class BitcoinZGUI(Window):
         self.app_version._impl.native.connect("enter-notify-event", self.app_version_mouse_enter)
         self.app_version._impl.native.connect("leave-notify-event", self.app_version_mouse_leave)
 
+        self.network_status = Label(
+            text="",
+            style=Pack(
+                text_align = LEFT,
+                font_weight = BOLD,
+                padding_left = 10,
+                font_size = 10,
+                flex = 1
+            )
+        )
+
         self.startup = BTCZSetup(
             self.app,
             self
@@ -74,7 +81,7 @@ class BitcoinZGUI(Window):
             self.startup
         )
         self.version_box.add(
-            self.empty_box,
+            self.network_status,
             self.app_version
         )
         self.content = self.startup_panel
