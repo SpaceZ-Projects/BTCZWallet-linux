@@ -27,7 +27,7 @@ from .status import AppStatusBar
 from .toolbar import AppToolbar
 from .storage import Storage
 from .settings import Settings
-from .network import Peer
+from .network import Peer, AddNode
 
 if not is_wsl():
     from .notify import Notify
@@ -217,6 +217,7 @@ class Menu(Window):
         self.toolbar.notification_messages_cmd.on_toggled = self.update_notifications_messages
         self.toolbar.startup_cmd.on_toggled = self.update_app_startup
         self.toolbar.peer_info_cmd.action = self.show_peer_info
+        self.toolbar.add_node_cmd.action = self.show_add_node
         self.toolbar.generate_t_cmd.action = self.new_transparent_address
         self.toolbar.generate_z_cmd.action = self.new_private_address
         self.toolbar.import_key_cmd.action = self.show_import_key
@@ -241,6 +242,10 @@ class Menu(Window):
             self.peer_toggle = True
         else:
             self.app.current_window = self.peer_window
+
+    def show_add_node(self, action):
+        self.add_node_window = AddNode()
+        self.add_node_window.show()
 
     def update_notifications_txs(self, action):
         if self.settings.notification_txs():

@@ -1,6 +1,8 @@
 
+import psutil
+
 from toga import App, Window, Box
-from ..framework import Toolbar, Command, CheckCommand
+from ..framework import Toolbar, Command, CheckCommand, Gtk
 
 from toga.style.pack import Pack
 from toga.constants import TOP, ROW
@@ -25,6 +27,9 @@ class AppToolbar(Box):
 
         self.toolbar = Toolbar()
 
+        accel_group = Gtk.AccelGroup()
+        self.main._impl.native.add_accel_group(accel_group)
+
         self.about_cmd = Command(
             title="About",
             action=self.display_about_dialog,
@@ -33,12 +38,16 @@ class AppToolbar(Box):
         self.exit_cmd = Command(
             title="Exit",
             action=self.exit_app,
-            tooltip="Exit the application and keep node running in background"
+            tooltip="Exit the application and keep node running in background",
+            shortcut="<Alt>F4",
+            accel_group=accel_group
         )
         self.stop_exit_cmd = Command(
             title="Stop node",
             action=self.stop_node_exit,
-            tooltip="Stop the node and exit the application"
+            tooltip="Stop the node and exit the application",
+            shortcut="<Alt>Q",
+            accel_group=accel_group
         )
 
         self.app_menu = Command(
@@ -52,7 +61,9 @@ class AppToolbar(Box):
 
         self.currency_cmd = Command(
             title="Currency",
-            tooltip="Change your currency display"
+            tooltip="Change your currency display",
+            shortcut="<Control><Shift>C",
+            accel_group=accel_group
         )
 
         self.notification_txs_cmd = CheckCommand(
@@ -82,13 +93,20 @@ class AppToolbar(Box):
 
         self.peer_info_cmd = Command(
             title="Peer info",
-            tooltip="Display data about each node connected"
+            tooltip="Display data about each node connected",
+            shortcut="<Control><Shift>N",
+            accel_group=accel_group
+        )
+        self.add_node_cmd = Command(
+            title="Add node",
+            tooltip="add a node to the addnode list"
         )
 
         self.network_menu = Command(
             title="Network",
             sub_commands=[
-                self.peer_info_cmd
+                self.peer_info_cmd,
+                self.add_node_cmd
             ]
         )
 
@@ -200,9 +218,9 @@ class AppToolbar(Box):
         )
 
     def stop_node_exit(self, action):
-        def on_result(widget, result):
+        async def on_result(widget, result):
             if result is True:
-                self.app.add_background_task(self.stop_node)
+                await self.stop_node()
 
         if self.mining_page.mining_status:
             return
@@ -212,8 +230,17 @@ class AppToolbar(Box):
             on_result=on_result
         )
 
-    async def stop_node(self, widget):
+    def stop_tor(self):
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                if proc.info['name'] == "tor_binary":
+                    proc.kill()
+        except Exception as e:
+            pass
+
+    async def stop_node(self):
         self.home_page.bitcoinz_curve.image = None
         self.home_page.clear_cache()
+        self.stop_tor()
         await self.commands.stopNode()
         self.app.exit()
