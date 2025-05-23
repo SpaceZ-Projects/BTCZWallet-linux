@@ -535,7 +535,6 @@ class Menu(Window):
     def on_change_mode(self, settings, param_spec):
         self.app.add_background_task(self.wallet.update_wallet_mode)
         self.app.add_background_task(self.home_page.update_home_mode)
-        self.app.add_background_task(self.receive_page.update_recieve_mode)
         self.app.add_background_task(self.send_page.update_send_mode)
         self.app.add_background_task(self.messages_page.update_messages_mode)
         self.app.add_background_task(self.mining_page.update_mining_mode)

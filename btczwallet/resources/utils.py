@@ -8,6 +8,7 @@ import shutil
 import qrcode
 import subprocess
 import shutil
+from aiohttp_socks import ProxyConnector, ProxyConnectionError
 
 from ..framework import Gtk
 from toga import App
@@ -269,13 +270,17 @@ class Utils():
             print(f"An error occurred: {e}")
     
 
-    async def fetch_binary_files(self, label, progress_bar):
+    async def fetch_binary_files(self, label, progress_bar, tor_enabled):
         file_name = "bitcoinz-c73d5cdb2b70-x86_64-linux-gnu.tar.gz"
         url = "https://github.com/btcz/bitcoinz/releases/download/2.1.0/"
         text = "Downloading binary...%"
         destination = os.path.join(self.app_data, file_name)
+        if tor_enabled:
+            connector = ProxyConnector.from_url('socks5://127.0.0.1:9051')
+        else:
+            connector = None
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=connector) as session:
                 async with session.get(url + file_name, timeout=None) as response:
                     if response.status == 200:
                         total_size = int(response.headers.get('content-length', 0))
@@ -306,6 +311,8 @@ class Utils():
                                 shutil.move(src, dest)
                         shutil.rmtree(extracted_folder)
                         os.remove(destination)
+        except ProxyConnectionError:
+            print("Proxy connection failed.")
         except RuntimeError as e:
             print(f"RuntimeError caught: {e}")
         except aiohttp.ClientError as e:
@@ -314,12 +321,16 @@ class Utils():
             print(f"An error occurred: {e}")
 
 
-    async def fetch_params_files(self, missing_files, zk_params_path, label, progress_bar):
+    async def fetch_params_files(self, missing_files, zk_params_path, label, progress_bar, tor_enabled):
         base_url = "https://d.btcz.rocks/"
         total_files = len(missing_files)
         text = "Downloading params...%"
+        if tor_enabled:
+            connector = ProxyConnector.from_url('socks5://127.0.0.1:9051')
+        else:
+            connector = None
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=connector) as session:
                 for idx, file_name in enumerate(missing_files):
                     url = base_url + file_name
                     file_path = os.path.join(zk_params_path, file_name)
@@ -342,6 +353,8 @@ class Utils():
                             self.file_handle = None
                     self.current_download_file = None
                 await session.close()
+        except ProxyConnectionError:
+            print("Proxy connection failed.")
         except RuntimeError as e:
             print(f"RuntimeError caught: {e}")
         except aiohttp.ClientError as e:
@@ -350,7 +363,7 @@ class Utils():
             print(f"An error occurred: {e}")
 
 
-    async def fetch_bootstrap_files(self, label, progress_bar):
+    async def fetch_bootstrap_files(self, label, progress_bar, tor_enabled):
         base_url = "https://github.com/btcz/bootstrap/releases/download/2024-09-04/"
         bootstrap_files = [
             'bootstrap.dat.7z.001',
@@ -361,8 +374,12 @@ class Utils():
         total_files = len(bootstrap_files)
         bitcoinz_path = self.get_bitcoinz_path()
         text = "Downloading bootstrap...%"
+        if tor_enabled:
+            connector = ProxyConnector.from_url('socks5://127.0.0.1:9051')
+        else:
+            connector = None
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=connector) as session:
                 for idx, file_name in enumerate(bootstrap_files):
                     file_path = os.path.join(bitcoinz_path, file_name)
                     if os.path.exists(file_path):
@@ -387,6 +404,8 @@ class Utils():
                             self.file_handle = None
                     self.current_download_file = None
                 await session.close()
+        except ProxyConnectionError:
+            print("Proxy connection failed.")
         except RuntimeError as e:
             print(f"RuntimeError caught: {e}")
         except aiohttp.ClientError as e:
@@ -395,11 +414,15 @@ class Utils():
             print(f"An error occurred: {e}")
 
 
-    async def fetch_miner(self, miner_selection, setup_miner_box, progress_bar, miner_folder, file_name, url):
+    async def fetch_miner(self, miner_selection, setup_miner_box, progress_bar, miner_folder, file_name, url, tor_enabled):
         destination = os.path.join(self.app_data, file_name)
         miner_dir = os.path.join(self.app_data, miner_folder)
+        if tor_enabled:
+            connector = ProxyConnector.from_url('socks5://127.0.0.1:9051')
+        else:
+            connector = None
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(connector=connector) as session:
                 async with session.get(url + file_name, timeout=None) as response:
                     if response.status == 200:
                         total_size = int(response.headers.get('content-length', 0))
@@ -417,6 +440,8 @@ class Utils():
                         self.file_handle = None
                         await session.close()
                         await self.extract_miner(miner_selection, setup_miner_box, progress_bar, destination, miner_folder, miner_dir)
+        except ProxyConnectionError:
+            print("Proxy connection failed.")
         except RuntimeError as e:
             print(f"RuntimeError caught: {e}")
         except aiohttp.ClientError as e:

@@ -321,7 +321,8 @@ class BTCZSetup(Box):
             self.status_label.text = text
             await self.utils.fetch_binary_files(
                 self.status_label,
-                self.progress_bar
+                self.progress_bar,
+                self.tor_enabled
             )
         await self.verify_params_files()
 
@@ -333,7 +334,7 @@ class BTCZSetup(Box):
             self.status_label.text = "Downloading params..."
             await self.utils.fetch_params_files(
                 missing_files, zk_params_path,
-                self.status_label, self.progress_bar,
+                self.status_label, self.progress_bar, self.tor_enabled
             )
         await self.verify_config_file()
 
@@ -376,7 +377,9 @@ class BTCZSetup(Box):
         self.status_label.text = "Downloading bootstrap..."
         await self.utils.fetch_bootstrap_files(
             self.status_label,
-            self.progress_bar)
+            self.progress_bar,
+            self.tor_enabled
+        )
         await self.extract_bootstrap_file()
 
 

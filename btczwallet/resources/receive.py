@@ -2,7 +2,6 @@
 import asyncio
 import json
 import webbrowser
-import time
 
 from toga import (
     App, Box, Label, ImageView, Window,
@@ -172,24 +171,6 @@ class Receive(Box):
                 alignment = TOP
             )
         )
-
-        self.copy_address = Button(
-            icon=copy_icon,
-            on_press=self.copy_address_clipboard
-        )
-        self.copy_address._impl.native.set_tooltip_text("Copy the selected address")
-
-        self.copy_key = Button(
-            icon=key_icon,
-            on_press=self.copy_key_clipboard
-        )
-        self.copy_key._impl.native.set_tooltip_text("Copy the key of selected address")
-
-        self.explorer_address = Button(
-            icon=explorer_icon,
-            on_press=self.open_address_explorer
-        )
-        self.explorer_address._impl.native.set_tooltip_text("Open the selected in explorer")
 
         self.address_panel = Box(
             style=Pack(
@@ -412,17 +393,3 @@ class Receive(Box):
         else:
             address_items = []
         return address_items
-    
-
-    def update_recieve_mode(self, widget):
-        if self.utils.get_sys_mode():
-            copy_icon = "images/copy_w"
-            key_icon = "images/key_w"
-            explorer_icon = "images/explorer_w"
-        else:
-            copy_icon = "images/copy_b"
-            key_icon = "images/key_b"
-            explorer_icon = "images/explorer_b"
-        self.copy_address.icon = copy_icon
-        self.copy_key.icon = key_icon
-        self.explorer_address.icon = explorer_icon

@@ -603,6 +603,8 @@ class Peer(Window):
         node_box, _ = widgets
         lastsend = node.get('lastsend')
         lastrecv = node.get('lastrecv')
+        subver = node.get('subver')
+        clean_subversion = subver.strip('/')
         conntime = node.get('conntime')
         conn_time = datetime.fromtimestamp(conntime, tz=timezone.utc)
         last_send = datetime.fromtimestamp(lastsend).strftime('%Y-%m-%d %H:%M:%S')
@@ -622,6 +624,7 @@ class Peer(Window):
         node_box.node_sent._impl.native.set_tooltip_text(f"Last send :{last_send}")
         node_box.node_receive.text = self.units.format_bytes(node.get('bytesrecv'))
         node_box.node_receive._impl.native.set_tooltip_text(f"Last receive :{last_receive}")
+        node_box.node_subversion.text = clean_subversion
         node_box.node_conntime.text = conn_duration
 
 

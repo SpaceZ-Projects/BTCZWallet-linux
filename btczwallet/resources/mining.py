@@ -450,7 +450,7 @@ class Mining(Box):
                 self.progress_bar
             )
             await self.utils.fetch_miner(
-                self.miner_selection, self.setup_miner_box, self.progress_bar, self.selected_miner, zip_file, url
+                self.miner_selection, self.setup_miner_box, self.progress_bar, self.selected_miner, zip_file, url, self.tor_enabled
             )
 
 
