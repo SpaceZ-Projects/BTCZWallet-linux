@@ -16,7 +16,7 @@ from toga.constants import (
     COLUMN, ROW, TOP, LEFT, BOLD, RIGHT,
     CENTER, Direction
 )
-from toga.colors import GRAY, rgb, YELLOW
+from toga.colors import GRAY, rgb, YELLOW, RED, WHITE, TRANSPARENT
 
 from .utils import Utils
 from .units import Units
@@ -42,6 +42,7 @@ class Currency(Window):
         self.title = "Change Currency"
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
+        
         self._impl.native.set_keep_above(True)
         self._impl.native.set_modal(True)
 
@@ -65,10 +66,11 @@ class Currency(Window):
             accessor="currency"
         )
 
-        self.close_button = Button(
-            text="Close",
+        self.cancel_button = Button(
+            text="Cancel",
             style=Pack(
-                font_size=10,
+                color = GRAY,
+                font_size=12,
                 font_weight = BOLD,
                 alignment = CENTER,
                 padding_bottom = 10,
@@ -76,12 +78,14 @@ class Currency(Window):
             ),
             on_press=self.close_currencies_window
         )
+        self.cancel_button._impl.native.connect("enter-notify-event", self.cancel_button_mouse_enter)
+        self.cancel_button._impl.native.connect("leave-notify-event", self.cancel_button_mouse_leave)
 
         self.content = self.main_box
 
         self.main_box.add(
             self.currencies_selection,
-            self.close_button
+            self.cancel_button
         )
 
         self.load_currencies()
@@ -129,6 +133,14 @@ class Currency(Window):
             currencies_items = [{"currency": currency} for currency in currencies_data.keys()]
             return currencies_items
         
+    def cancel_button_mouse_enter(self, sender, event):
+        self.cancel_button.style.color = WHITE
+        self.cancel_button.style.background_color = RED
+
+    def cancel_button_mouse_leave(self, sender, event):
+        self.cancel_button.style.color = GRAY
+        self.cancel_button.style.background_color = TRANSPARENT
+        
     def close_currencies_window(self, button):
         self.close()
 
@@ -160,20 +172,40 @@ class Home(Box):
         self.circulating_toggle = None
         self.circulating = None
 
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             panel_color = rgb(56,56,56)
         else:
             panel_color = rgb(230,230,230)
 
-        self.market_label = Label(
-            text="MarketCap :",
+        self.coingecko_icon = ImageView(
+            image="images/coingecko.png",
             style=Pack(
-                font_size = 11,
+                padding = (5,0,0,10),
+            )
+        )
+        self.coingecko_label = Label(
+            text="coingecko",
+            style=Pack(
+                font_size = 12,
                 text_align = LEFT,
-                color = GRAY,
                 font_weight = BOLD,
-                padding = (10,0,0,10)
+                padding = (5,0,0,5)
+            )
+        )
+        self.last_updated_label = Label(
+            "",
+            style=Pack(
+                color = GRAY,
+                font_size = 9,
+                text_align = LEFT,
+                font_weight = BOLD,
+                padding = (10,0,0,5),
+                flex = 1
+            )
+        )
+        self.coingecko_box = Box(
+            style=Pack(
+                direction = ROW
             )
         )
         self.market_box = Box(
@@ -345,18 +377,6 @@ class Home(Box):
             )
         )
 
-        self.last_updated_label = Label(
-            "",
-            style=Pack(
-                font_size = 9,
-                text_align = RIGHT,
-                color = GRAY,
-                font_weight = BOLD,
-                padding = (5,10,0,0),
-                flex = 1
-            )
-        )
-
         self.bitcoinz_curve = ImageView(
             style=Pack(
                 alignment = CENTER,
@@ -389,12 +409,17 @@ class Home(Box):
         await asyncio.sleep(0.2)
         if not self.home_toggle:
             self.add(
-                self.market_label, 
+                self.coingecko_box, 
                 self.market_box,
                 self.last_updated_label,
                 self.bitcoinz_curve,
                 self.halving_label,
                 self.remaining_label
+            )
+            self.coingecko_box.add(
+                self.coingecko_icon,
+                self.coingecko_label,
+                self.last_updated_label
             )
             self.market_box.add(
                 self.price_label,
@@ -427,11 +452,13 @@ class Home(Box):
         try:
             async with aiohttp.ClientSession(connector=connector) as session:
                 headers={'User-Agent': 'Mozilla/5.0'}
-                async with session.get(api, headers=headers) as response:
+                async with session.get(api, headers=headers, timeout=10) as response:
                     response.raise_for_status()
                     data = await response.json()
                     return data
         except ProxyConnectionError:
+            return None
+        except asyncio.TimeoutError:
             return None
         except Exception as e:
             print(f"Error occurred during fetch: {e}")
@@ -467,6 +494,7 @@ class Home(Box):
                 last_updated_datetime = datetime.fromisoformat(last_updated.replace("Z", ""))
                 formatted_last_updated = last_updated_datetime.strftime("%Y-%m-%d %H:%M:%S UTC")
                 btcz_price = self.units.format_price(market_price)
+                self.settings.update_settings("btcz_price", btcz_price)
                 self.price_value.text = f"{btcz_price} {self.settings.symbol()}"
                 self.percentage_24_value.text = f"{price_percentage_24} %"
                 self.percentage_7_value.text = f"{price_percentage_7d} %"
@@ -479,12 +507,7 @@ class Home(Box):
     async def update_marketchar(self, widget):
         while True:
             self.data = await self.curve.fetch_marketchart()
-            if not self.data:
-                self.main.error_dialog(
-                    title="Request Error",
-                    message="Too many requests. The market cap will be updated in the next 10 minutes."
-                )
-            else:
+            if self.data:
                 curve_image = self.curve.create_curve(self.data)
                 if curve_image:
                     self.bitcoinz_curve.image = curve_image

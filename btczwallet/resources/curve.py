@@ -1,4 +1,5 @@
 
+import asyncio
 import aiohttp
 import os
 import pandas as pd
@@ -11,7 +12,7 @@ from .units import Units
 from .utils import Utils
 from .settings import Settings
 
-COINGECKO_API = "https://api.coingecko.com/api/v3/coins/bitcoinz/market_chart"
+
 
 class Curve():
     def __init__(self, app:App):
@@ -26,6 +27,7 @@ class Curve():
 
 
     async def fetch_marketchart(self):
+        api = "https://api.coingecko.com/api/v3/coins/bitcoinz/market_chart"
         params = {
             'vs_currency': self.settings.currency(),
             'days': '1',
@@ -38,12 +40,14 @@ class Curve():
         try:
             async with aiohttp.ClientSession(connector=connector) as session:
                 headers={'User-Agent': 'Mozilla/5.0'}
-                async with session.get(COINGECKO_API, params=params, headers=headers) as response:
+                async with session.get(api, params=params, headers=headers, timeout=10) as response:
                     response.raise_for_status()
                     data = await response.json()
                     prices = data.get('prices', [])
                     return prices
         except ProxyConnectionError:
+            return None
+        except asyncio.TimeoutError:
             return None
         except Exception as e:
             print(f"Error occurred during fetch: {e}")
@@ -51,8 +55,7 @@ class Curve():
         
 
     def create_curve(self, data):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             background_color = "#383838"
             text_color = "white"
         else:

@@ -10,10 +10,12 @@ from toga import (
     App, Box, Window, Button, Label, TextInput,
     ScrollContainer, ImageView, MultilineTextInput
 )
-from ..framework import ClipBoard, Gtk, Gdk, is_wsl
+from ..framework import ClipBoard, Gtk, Gdk, is_wsl, Menu, Command
 from toga.style.pack import Pack
 from toga.constants import ROW, CENTER, COLUMN, BOLD, BOTTOM
-from toga.colors import rgb, BLACK, GRAY, RED, ORANGE, TRANSPARENT
+from toga.colors import (
+    rgb, BLACK, GRAY, RED, ORANGE, TRANSPARENT, GREENYELLOW, WHITE
+)
 
 from .storage import Storage
 from .utils import Utils
@@ -42,6 +44,9 @@ class EditUser(Window):
         self.title = "Edit Username"
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
+
+        self._impl.native.set_keep_above(True)
+        self._impl.native.set_modal(True)
 
         self.main_box = Box(
             style=Pack(
@@ -86,24 +91,34 @@ class EditUser(Window):
             )
         )
 
-        self.confirm_button = Button(
-            text="Confirm",
+        self.change_button = Button(
+            text="Change",
             style=Pack(
+                color = GRAY,
+                font_size=12,
+                font_weight = BOLD,
                 alignment = CENTER,
                 padding_bottom = 10,
-                padding_left = 10
+                padding_left = 15
             ),
             on_press=self.verify_username
         )
+        self.change_button._impl.native.connect("enter-notify-event", self.change_button_mouse_enter)
+        self.change_button._impl.native.connect("leave-notify-event", self.change_button_mouse_leave)
 
-        self.close_button = Button(
-            text="Close",
+        self.cancel_button = Button(
+            text="Cancel",
             style=Pack(
+                color = GRAY,
+                font_size=12,
+                font_weight = BOLD,
                 alignment = CENTER,
-                padding_bottom = 10,
-                padding_right = 10
-            )
+                padding_bottom = 10
+            ),
+            on_press=self.close_edit_username
         )
+        self.cancel_button._impl.native.connect("enter-notify-event", self.cancel_button_mouse_enter)
+        self.cancel_button._impl.native.connect("leave-notify-event", self.cancel_button_mouse_leave)
 
         self.buttons_box = Box(
             style=Pack(
@@ -120,17 +135,16 @@ class EditUser(Window):
         )
         self.username_box.add(
             self.username_label,
-            self.username_input
+            self.username_input,
+            self.change_button
         )
         self.buttons_box.add(
-            self.close_button,
-            self.confirm_button
+            self.cancel_button
         )
 
     async def verify_username(self, button):
         def on_result(widget, result):
             if result is None:
-                self.main.edit_user_toggle = None
                 self.close()
         if not self.username_input.value:
             self.error_dialog(
@@ -153,11 +167,33 @@ class EditUser(Window):
         )
 
 
+    def change_button_mouse_enter(self, widget, event):
+        self.change_button.style.color = BLACK
+        self.change_button.style.background_color = GREENYELLOW
+
+    def change_button_mouse_leave(self, widget, event):
+        self.change_button.style.color = GRAY
+        self.change_button.style.background_color = TRANSPARENT
+
+
+    def cancel_button_mouse_enter(self, sender, event):
+        self.cancel_button.style.color = WHITE
+        self.cancel_button.style.background_color = RED
+
+    def cancel_button_mouse_leave(self, sender, event):
+        self.cancel_button.style.color = GRAY
+        self.cancel_button.style.background_color = TRANSPARENT
+    
+
+    def close_edit_username(self, button):
+        self.close()
+
+
 
 class Indentifier(Window):
     def __init__(self, messages_page:Box, main:Window, chat:Box):
         super().__init__(
-            size = (700, 150),
+            size = (650, 150),
             resizable= False,
             closable=False
         )
@@ -173,6 +209,9 @@ class Indentifier(Window):
         self.title = "Setup Indentity"
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
+
+        self._impl.native.set_keep_above(True)
+        self._impl.native.set_modal(True)
 
         self.main_box = Box(
             style=Pack(
@@ -216,20 +255,25 @@ class Indentifier(Window):
             )
         )
 
-        self.close_button = Button(
-            text="Close",
+        self.cancel_button = Button(
+            text="Cancel",
             style=Pack(
+                color=GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 alignment = CENTER,
                 padding_bottom = 10,
                 padding_right = 10
-            )
+            ),
+            on_press=self.close_identity_setup
         )
+        self.cancel_button._impl.native.connect("enter-notify-event", self.cancel_button_mouse_enter)
+        self.cancel_button._impl.native.connect("leave-notify-event", self.cancel_button_mouse_leave)
 
-        self.confirm_button = Button(
-            text="Confirm",
+        self.create_button = Button(
+            text="Create",
             style=Pack(
+                color=GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 alignment = CENTER,
@@ -238,6 +282,8 @@ class Indentifier(Window):
             ),
             on_press=self.verify_identity
         )
+        self.create_button._impl.native.connect("enter-notify-event", self.create_button_mouse_enter)
+        self.create_button._impl.native.connect("leave-notify-event", self.create_button_mouse_leave)
 
         self.buttons_box = Box(
             style=Pack(
@@ -258,8 +304,8 @@ class Indentifier(Window):
             self.username_input
         )
         self.buttons_box.add(
-            self.close_button,
-            self.confirm_button
+            self.cancel_button,
+            self.create_button
         )
 
     async def verify_identity(self, button):
@@ -298,6 +344,28 @@ class Indentifier(Window):
             )
 
 
+    def create_button_mouse_enter(self, widget, event):
+        self.create_button.style.color = BLACK
+        self.create_button.style.background_color = GREENYELLOW
+
+    def create_button_mouse_leave(self, widget, event):
+        self.create_button.style.color = GRAY
+        self.create_button.style.background_color = TRANSPARENT
+
+
+    def cancel_button_mouse_enter(self, sender, event):
+        self.cancel_button.style.color = WHITE
+        self.cancel_button.style.background_color = RED
+
+    def cancel_button_mouse_leave(self, sender, event):
+        self.cancel_button.style.color = GRAY
+        self.cancel_button.style.background_color = TRANSPARENT
+
+    
+    def close_identity_setup(self, button):
+        self.close()
+
+
 class NewMessenger(Box):
     def __init__(self, messages_page:Box, main:Window, chat:Box):
         super().__init__(
@@ -323,9 +391,11 @@ class NewMessenger(Box):
                 font_size = 11
             )
         )
+
         self.create_button = Button(
             text="New Messenger",
             style=Pack(
+                color = GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 width = 160,
@@ -333,7 +403,6 @@ class NewMessenger(Box):
             ),
             on_press=self.create_button_click
         )
-
         self.create_button._impl.native.connect("enter-notify-event", self.create_button_mouse_enter)
         self.create_button._impl.native.connect("leave-notify-event", self.create_button_mouse_leave)
 
@@ -344,14 +413,8 @@ class NewMessenger(Box):
 
 
     def create_button_click(self, button):
-        if not self.new_identity_toggel:
-            self.indentity = Indentifier(self.messages_page, self.main, self.chat)
-            self.indentity.on_close = self.close_indentity_setup
-            self.indentity.close_button.on_press = self.close_indentity_setup
-            self.indentity.show()
-            self.new_identity_toggel = True
-        else:
-            self.app.current_window = self.indentity
+        self.indentity = Indentifier(self.messages_page, self.main, self.chat)
+        self.indentity.show()
 
 
     def create_button_mouse_enter(self, widget, event):
@@ -503,8 +566,7 @@ class Contact(Box):
         self.username = username
         self.address = address
         
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             if self.category == "individual":
                 image_path = "images/individual_w.png"
             elif self.category == "group":
@@ -547,17 +609,32 @@ class Contact(Box):
             self.username_label,
             self.unread_messages
         )
-        self.username_label._impl.native.connect("button-press-event", self.contact_context_event)
-        self.contact_context_menu = Gtk.Menu()
-        copy_address_item = Gtk.MenuItem(label="Copy address")
-        copy_address_item.connect("activate", self.copy_address)
-        ban_address_item = Gtk.MenuItem(label="Ban contact")
-        ban_address_item.connect("activate", self.ban_address)
-        self.contact_context_menu.append(copy_address_item)
-        self.contact_context_menu.append(ban_address_item)
-        self.contact_context_menu.show_all()
 
+        self.username_label._impl.native.connect("button-press-event", self.contact_context_event)
+        self.contact_context_menu = Menu()
+        self.copy_address_cmd = Command(
+            title="Copy address",
+            action=self.copy_address
+        )
+        self.ban_address_cmd = Command(
+            title="Ban contact",
+            action=self.ban_address
+        )
+        self.contact_context_menu.add_commands(
+            [
+                self.copy_address_cmd,
+                self.ban_address_cmd
+            ]
+        )
+        self.set_contact_context_icons()
         self.app.add_background_task(self.update_contact)
+
+
+    def set_contact_context_icons(self):
+        if self.utils.get_sys_mode():
+            self.copy_address_cmd.icon = "images/copy_w.png"
+        else:
+            self.copy_address_cmd.icon = "images/copy_b.png"
 
 
     def contact_context_event(self, widget, event):
@@ -626,8 +703,7 @@ class Contact(Box):
 
 
     def update_contact_mode(self, wdiget):
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             if self.category == "individual":
                 image_path = "images/individual_w.png"
             elif self.category == "group":
@@ -638,6 +714,7 @@ class Contact(Box):
             elif self.category == "group":
                 image_path = "images/group_b.png"
         self.category_icon.icon = image_path
+        self.set_contact_context_icons()
 
 
 
@@ -646,7 +723,8 @@ class NewContact(Window):
     def __init__(self, chat):
         super().__init__(
             size = (600, 150),
-            resizable= False
+            resizable= False,
+            closable=False
         )
 
         self.utils = Utils(self.app)
@@ -660,6 +738,9 @@ class NewContact(Window):
         self.title = "Add Contact"
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
+
+        self._impl.native.set_keep_above(True)
+        self._impl.native.set_modal(True)
 
         self.main_box = Box(
             style=Pack(
@@ -707,30 +788,35 @@ class NewContact(Window):
             )
         )
 
-        self.close_button = Button(
-            text="Close",
+        self.cancel_button = Button(
+            text="Cancel",
             style=Pack(
+                color = GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 alignment = CENTER,
                 padding_bottom = 10,
-                padding_right = 10,
-                width = 100
-            )
+                padding_right = 10
+            ),
+            on_press=self.close_new_contact
         )
+        self.cancel_button._impl.native.connect("enter-notify-event", self.cancel_button_mouse_enter)
+        self.cancel_button._impl.native.connect("leave-notify-event", self.cancel_button_mouse_leave)
 
-        self.confirm_button = Button(
-            text="Confirm",
+        self.send_request_button = Button(
+            text="Send Request",
             style=Pack(
+                color = GRAY,
                 font_weight = BOLD,
                 font_size = 12,
                 alignment = CENTER,
                 padding_bottom = 10,
-                padding_right = 10,
-                width = 100
+                padding_right = 10
             ),
             on_press=self.verify_address
         )
+        self.send_request_button._impl.native.connect("enter-notify-event", self.send_request_button_mouse_enter)
+        self.send_request_button._impl.native.connect("leave-notify-event", self.send_request_button_mouse_leave)
 
         self.buttons_box = Box(
             style=Pack(
@@ -751,8 +837,8 @@ class NewContact(Window):
             self.is_valid
         )
         self.buttons_box.add(
-            self.close_button,
-            self.confirm_button
+            self.cancel_button,
+            self.send_request_button
         )
 
 
@@ -871,13 +957,33 @@ class NewContact(Window):
     
     def disable_window(self):
         self.address_input.readonly = True
-        self.close_button.enabled = False
-        self.confirm_button.enabled = False
+        self.cancel_button.enabled = False
+        self.send_request_button.enabled = False
 
     def enable_window(self):
         self.address_input.readonly = False
-        self.close_button.enabled = True
-        self.confirm_button.enabled = True
+        self.cancel_button.enabled = True
+        self.send_request_button.enabled = True
+
+    def send_request_button_mouse_enter(self, widget, event):
+        self.send_request_button.style.color = BLACK
+        self.send_request_button.style.background_color = GREENYELLOW
+
+    def send_request_button_mouse_leave(self, widget, event):
+        self.send_request_button.style.color = GRAY
+        self.send_request_button.style.background_color = TRANSPARENT
+
+
+    def cancel_button_mouse_enter(self, sender, event):
+        self.cancel_button.style.color = WHITE
+        self.cancel_button.style.background_color = RED
+
+    def cancel_button_mouse_leave(self, sender, event):
+        self.cancel_button.style.color = GRAY
+        self.cancel_button.style.background_color = TRANSPARENT
+
+    def close_new_contact(self, button):
+        self.close()
 
 
 
@@ -905,8 +1011,7 @@ class Pending(Box):
         self.username = username
         self.address = address
 
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             if self.category == "individual":
                 image_path = "images/individual_w.png"
             elif self.category == "group":
@@ -1051,6 +1156,9 @@ class PendingList(Window):
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
 
+        self._impl.native.set_keep_above(True)
+        self._impl.native.set_modal(True)
+
         self.main_box = Box(
             style=Pack(
                 direction = COLUMN,
@@ -1096,12 +1204,17 @@ class PendingList(Window):
         self.close_button = Button(
             text="Close",
             style=Pack(
+                color = GRAY,
+                font_size = 12,
                 font_weight = BOLD,
                 alignment = CENTER,
                 padding_bottom = 10,
                 width = 100
-            )
+            ),
+            on_press=self.close_pinding_list
         )
+        self.close_button._impl.native.connect("enter-notify-event", self.close_button_mouse_enter)
+        self.close_button._impl.native.connect("leave-notify-event", self.close_button_mouse_leave)
 
         self.content = self.main_box
 
@@ -1152,6 +1265,20 @@ class PendingList(Window):
         self.pending_list_box.add(pending_contact)
 
 
+    def close_button_mouse_enter(self, sender, event):
+        self.close_button.style.color = WHITE
+        self.close_button.style.background_color = RED
+
+    def close_button_mouse_leave(self, sender, event):
+        self.close_button.style.color = GRAY
+        self.close_button.style.background_color = TRANSPARENT
+
+
+    def close_pinding_list(self, button):
+        self.chat.pending_toggle = None
+        self.close()
+
+
 
 class Chat(Box):
     def __init__(self, app:App, main:Window):
@@ -1187,8 +1314,7 @@ class Chat(Box):
         self.unread_messages = []
         self.processed_timestamps = set()
 
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             add_contact_icon = "images/add_contact_w"
             pending_icon = "images/pending_w"
             copy_icon = "images/copy_w"
@@ -1642,8 +1768,7 @@ class Chat(Box):
     def load_pending_list(self):
         pending = self.storage.get_pending()
         if pending:
-            mode = self.utils.get_sys_mode()
-            if mode:
+            if self.utils.get_sys_mode():
                 icon = "images/new_pending_w"
             else:
                 icon = "images/new_pending_b"
@@ -1884,21 +2009,8 @@ class Chat(Box):
 
 
     def add_contact_click(self, button):
-        if not self.new_contact_toggle and not self.pending_toggle:
-            self.new_contact = NewContact(self)
-            self.new_contact.on_close = self.close_contact_window
-            self.new_contact.close_button.on_press = self.close_contact_window
-            self.new_contact.show()
-            self.new_contact_toggle = True
-        elif self.new_contact_toggle:
-            self.app.current_window = self.new_contact
-        elif self.pending_toggle:
-            self.app.current_window = self.pending_list
-
-
-    def close_contact_window(self, button):
-        self.new_contact.close()
-        self.new_contact_toggle = None
+        self.new_contact = NewContact(self)
+        self.new_contact.show()
 
 
     def update_pending_list(self):
@@ -1925,19 +2037,8 @@ class Chat(Box):
                 self.pending_contacts.icon = pending_icon
                 self.new_pending_toggle = None
             self.pending_list = PendingList(self)
-            self.pending_list.on_close = self.close_pending_window
-            self.pending_list.close_button.on_press = self.close_pending_window
             self.pending_list.show()
             self.pending_toggle = True
-        elif self.pending_toggle:
-            self.app.current_window = self.pending_list
-        elif self.new_contact_toggle:
-            self.app.current_window = self.new_contact
-
-    
-    def close_pending_window(self, button):
-        self.pending_list.close()
-        self.pending_toggle = None
 
 
     def copy_messages_address(self, button):

@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import aiohttp
 from aiohttp_socks import ProxyConnector, ProxyConnectionError
+import re
 
 from toga import (
     App, Box, Label, ProgressBar, Window
@@ -43,14 +44,13 @@ class BTCZSetup(Box):
         self.blockchaine_index = None
         self.tor_enabled = None
 
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             panel_color = rgb(56,56,56)
         else:
             panel_color = rgb(230,230,230)
 
         self.status_label = Label(
-            text="Verify binary files...",
+            text="Verify network...",
             style=Pack(
                 font_size = 10,
                 font_weight = BOLD,
@@ -206,17 +206,26 @@ class BTCZSetup(Box):
         async def on_result(widget, result):
             if result is True:
                 self.settings.update_settings("tor_network", True)
+                self.main.tor_icon.image = "images/tor_on.png"
                 self.main.network_status.style.color = rgb(114,137,218)
-                self.main.network_status.text = "Tor : Enabled"
+                self.main.network_status.text = "Enabled"
+                if self.node_status:
+                    await self.commands.stopNode()
+                    await asyncio.sleep(1)
                 await self.verify_tor_files()
             if result is False:
                 self.settings.update_settings("tor_network", False)
-                await self.verify_binary_files()
+                if self.node_status:
+                    await self.open_main_menu()
+                else:
+                    await self.verify_binary_files()
+
         await asyncio.sleep(1)
+        self.node_status = await self.is_bitcoinz_running()
         self.tor_enabled = self.settings.tor_network()
         if self.tor_enabled is None:
             self.main.network_status.style.color = GRAY
-            self.main.network_status.text = "Tor : Disabled"
+            self.main.network_status.text = "Disabled"
             self.main.question_dialog(
                 title="Tor Network",
                 message="This is your first time running the app.\nWould you like to enable the Tor network ?",
@@ -224,13 +233,29 @@ class BTCZSetup(Box):
             )
         else:
             if self.tor_enabled is True:
+                self.main.tor_icon.image = "images/tor_on.png"
                 self.main.network_status.style.color = rgb(114,137,218)
-                self.main.network_status.text = "Tor : Enabled"
-                await self.verify_tor_files()
+                self.main.network_status.text = "Enabled"
+                await asyncio.sleep(1)
+                if self.node_status:
+                    await self.open_main_menu()
+                else:
+                    await self.verify_tor_files()
             elif self.tor_enabled is False:
                 self.main.network_status.style.color = GRAY
-                self.main.network_status.text = "Tor : Disabled"
-                await self.verify_binary_files()
+                self.main.network_status.text = "Disabled"
+                await asyncio.sleep(1)
+                if self.node_status:
+                    await self.open_main_menu()
+                else:
+                    await self.verify_binary_files()
+
+
+    async def is_bitcoinz_running(self):
+        result,_ = await self.commands.getInfo()
+        if result:
+            return True
+        return None
 
 
     async def verify_tor_files(self):
@@ -272,6 +297,7 @@ class BTCZSetup(Box):
                     stderr=asyncio.subprocess.STDOUT
                 )
                 self.status_label.text = "Waiting for Tor to initialize..."
+                await asyncio.sleep(1)
                 try:
                     result = await self.wait_tor_bootstrap()
                     if result:
@@ -292,13 +318,20 @@ class BTCZSetup(Box):
 
 
     async def wait_tor_bootstrap(self):
+        self.progress_bar.value = 0
+        percentage_pattern = re.compile(r'Bootstrapped (\d+)%')
         while True:
             line = await self.tor_process.stdout.readline()
             if not line:
                 break
             decoded = line.decode().strip()
-            if "Bootstrapped 100% (done): Done" in decoded:
-                return True
+            match = percentage_pattern.search(decoded)
+            if match:
+                percent = int(match.group(1))
+                self.status_label.text = f"Tor Bootstrap Progress: {percent}%"
+                self.progress_bar.value = percent
+                if percent == 100:
+                    return True
 
 
     async def is_tor_alive(self):
@@ -319,6 +352,7 @@ class BTCZSetup(Box):
         if missing_files:
             text = "Downloading binary..."
             self.status_label.text = text
+            self.progress_bar.value = 0
             await self.utils.fetch_binary_files(
                 self.status_label,
                 self.progress_bar,
@@ -332,6 +366,7 @@ class BTCZSetup(Box):
         missing_files, zk_params_path = self.utils.get_zk_params()
         if missing_files:
             self.status_label.text = "Downloading params..."
+            self.progress_bar.value = 0
             await self.utils.fetch_params_files(
                 missing_files, zk_params_path,
                 self.status_label, self.progress_bar, self.tor_enabled
@@ -375,6 +410,7 @@ class BTCZSetup(Box):
 
     async def download_bitcoinz_bootstrap(self, widget):
         self.status_label.text = "Downloading bootstrap..."
+        self.progress_bar.value = 0
         await self.utils.fetch_bootstrap_files(
             self.status_label,
             self.progress_bar,
@@ -443,10 +479,6 @@ class BTCZSetup(Box):
             sync_percentage = sync * 100
             if sync_percentage <= 99.95:
                 self.update_info_box()
-                self.main.info_dialog(
-                    title="Disabled Wallet",
-                    message="The wallet is currently disabled as it is synchronizing. It will be accessible once the sync process is complete.",
-                )
                 while True:
                     blockchaininfo, _ = await self.commands.getBlockchainInfo()
                     if blockchaininfo:

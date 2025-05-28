@@ -60,6 +60,13 @@ class BitcoinZGUI(Window):
         self.app_version._impl.native.connect("enter-notify-event", self.app_version_mouse_enter)
         self.app_version._impl.native.connect("leave-notify-event", self.app_version_mouse_leave)
 
+        self.tor_icon = ImageView(
+            image="images/tor_off.png",
+            style=Pack(
+                padding_left = 10,
+            )
+        )
+
         self.network_status = Label(
             text="",
             style=Pack(
@@ -81,6 +88,7 @@ class BitcoinZGUI(Window):
             self.startup
         )
         self.version_box.add(
+            self.tor_icon,
             self.network_status,
             self.app_version
         )

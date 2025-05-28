@@ -43,8 +43,7 @@ class Send(Box):
         self.is_valid_toggle = None
         self.z_addresses_limit_toggle = None
 
-        mode = self.utils.get_sys_mode()
-        if mode:
+        if self.utils.get_sys_mode():
             panel_color = rgb(56,56,56)
         else:
             panel_color = rgb(230,230,230)
@@ -672,7 +671,7 @@ class Send(Box):
         self.address_selection.items.clear()
         self.address_selection.items = selection_items
 
-    async def update_addresses(self):
+    async def reload_addresses(self):
         if self.send_toggle:
             if self.transparent_toggle:
                 selection_items = await self.get_transparent_addresses()

@@ -37,8 +37,8 @@ class Wallet(Box):
         self.units = Units(self.app)
 
         self.unconfirmed_balance_toggle = None
-        mode = self.utils.get_sys_mode()
-        if mode:
+        
+        if self.utils.get_sys_mode():
             background_color = rgb(56, 56, 56)
         else:
             background_color = rgb(230,230,230)
@@ -337,6 +337,7 @@ class ImportKey(Window):
             text="Import",
             style=Pack(
                 color = GRAY,
+                font_size = 12,
                 alignment = CENTER,
                 font_weight = BOLD,
                 padding = (0,10,0,10)
@@ -359,6 +360,7 @@ class ImportKey(Window):
             text="Cancel",
             style=Pack(
                 color = GRAY,
+                font_size = 12,
                 alignment = CENTER,
                 font_weight = BOLD,
                 padding_bottom = 10,
@@ -512,7 +514,7 @@ class ImportWallet(Window):
             style=Pack(
                 color= GRAY,
                 font_weight = BOLD,
-                font_size=10,
+                font_size=12,
                 flex = 1,
                 padding = (0,10,0,10)
             ),
@@ -534,7 +536,7 @@ class ImportWallet(Window):
             text="Cancel",
             style=Pack(
                 color = GRAY,
-                font_size=10,
+                font_size=12,
                 font_weight = BOLD,
                 alignment = CENTER,
                 padding_bottom = 10,

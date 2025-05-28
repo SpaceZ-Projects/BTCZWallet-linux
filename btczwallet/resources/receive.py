@@ -7,7 +7,7 @@ from toga import (
     App, Box, Label, ImageView, Window,
     Button, Table
 )
-from ..framework import ClipBoard, Gtk, Gdk
+from ..framework import ClipBoard, Gtk, Gdk, Menu, Command
 from toga.style.pack import Pack
 from toga.constants import COLUMN, ROW, CENTER, BOLD, TOP
 from toga.colors import rgb, GRAY, BLACK, YELLOW, TRANSPARENT
@@ -43,16 +43,6 @@ class Receive(Box):
         self.private_addresses_rows = []
         self.transparent_addresses = []
         self.private_addresses = []
-
-        mode = self.utils.get_sys_mode()
-        if mode:
-            copy_icon = "images/copy_w"
-            key_icon = "images/key_w"
-            explorer_icon = "images/explorer_w"
-        else:
-            copy_icon = "images/copy_b"
-            key_icon = "images/key_b"
-            explorer_icon = "images/explorer_b"
 
         self.addresses_box = Box(
             style=Pack(
@@ -114,17 +104,27 @@ class Receive(Box):
         )
         addresses_table_widgets = self.addresses_table._impl.native.get_child()
         addresses_table_widgets.connect("button-press-event", self.addresses_table_context_event)
-        self.addresses_table_context_menu = Gtk.Menu()
-        copy_address_item = Gtk.MenuItem(label="Copy address")
-        copy_address_item.connect("activate", self.copy_address_clipboard)
-        copy_key_item = Gtk.MenuItem(label="Copy private key")
-        copy_key_item.connect("activate", self.copy_key_clipboard)
-        explorer_address_item = Gtk.MenuItem(label="View address in explorer")
-        explorer_address_item.connect("activate", self.open_address_explorer)
-        self.addresses_table_context_menu.append(copy_address_item)
-        self.addresses_table_context_menu.append(copy_key_item)
-        self.addresses_table_context_menu.append(explorer_address_item)
-        self.addresses_table_context_menu.show_all()
+
+        self.addresses_table_context_menu = Menu()
+        self.copy_address_cmd = Command(
+            title="Copy address",
+            action=self.copy_address
+        )
+        self.copy_key_cmd = Command(
+            title="Copy private key",
+            action=self.copy_key
+        )
+        self.explorer_address_cmd = Command(
+            title="View address in explorer",
+            action=self.open_address_explorer
+        )
+        self.addresses_table_context_menu.add_commands(
+            [
+                self.copy_address_cmd,
+                self.copy_key_cmd,
+                self.explorer_address_cmd
+            ]
+        )
 
         self.address_info = Box(
             style=Pack(
@@ -178,6 +178,18 @@ class Receive(Box):
                 flex = 1
             )
         )
+        self.set_receive_context_icons()
+
+
+    def set_receive_context_icons(self):
+        if self.utils.get_sys_mode():
+            self.copy_address_cmd.icon = "images/copy_w.png"
+            self.copy_key_cmd.icon = "images/copy_w.png"
+            self.explorer_address_cmd.icon = "images/explorer_w.png"
+        else:
+            self.copy_address_cmd.icon = "images/copy_b.png"
+            self.copy_key_cmd.icon = "images/copy_b.png"
+            self.explorer_address_cmd.icon = "images/explorer_b.png"
 
         
     async def insert_widgets(self, widget):
@@ -274,7 +286,7 @@ class Receive(Box):
             path = Gtk.TreePath(0)
             selection.select_path(path)
 
-    async def update_addresses(self):
+    async def reload_addresses(self):
         if self.recieve_toggle:
             if self.transparent_toggle:
                 transparent_addresses = await self.get_transparent_addresses()
@@ -331,7 +343,7 @@ class Receive(Box):
             self.address_balance.text = f"Balance : {balance}"
 
 
-    def copy_address_clipboard(self, centext):
+    def copy_address(self, action):
         if not self.addresses_table.selection:
             return
         row = self.addresses_table.selection
@@ -342,16 +354,19 @@ class Receive(Box):
         )
 
 
-    def open_address_explorer(self, centext):
+    def open_address_explorer(self, action):
         if not self.addresses_table.selection:
             return
-        url = "https://explorer.btcz.rocks/address/"
         row = self.addresses_table.selection
-        transaction_url = url + row.addresses
+        address = row.addresses
+        if address.startswith('z'):
+            return
+        url = "https://explorer.btcz.rocks/address/"
+        transaction_url = url + address
         webbrowser.open(transaction_url)
 
 
-    def copy_key_clipboard(self, centext):
+    def copy_key(self, action):
         if not self.addresses_table.selection:
             return
         self.app.add_background_task(self.get_address_key)
@@ -393,3 +408,7 @@ class Receive(Box):
         else:
             address_items = []
         return address_items
+    
+
+    def update_receive_mode(self, widget):
+        self.set_receive_context_icons()

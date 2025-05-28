@@ -8,9 +8,9 @@ import time
 from functools import partial
 
 from toga import App, Box, Label, Window, Button, Table
-from ..framework import Gtk, Gdk, ClipBoard, is_wsl
+from ..framework import Gdk, ClipBoard, is_wsl, Menu, Command
 from toga.style.pack import Pack
-from toga.colors import GRAY, GREEN, RED, ORANGE, BLACK
+from toga.colors import GRAY, GREEN, RED, ORANGE, BLACK, WHITE, TRANSPARENT
 from toga.constants import COLUMN, CENTER, BOLD, ROW, LEFT
 
 from .client import Client
@@ -42,6 +42,9 @@ class Txid(Window):
         self.title = "Transaction Info"
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
+
+        self._impl.native.set_keep_above(True)
+        self._impl.native.set_modal(True)
 
         self.main_box = Box(
             style=Pack(
@@ -153,6 +156,7 @@ class Txid(Window):
         self.close_button = Button(
             text="Close",
             style=Pack(
+                color=GRAY,
                 alignment = CENTER,
                 font_weight = BOLD,
                 font_size = 12,
@@ -161,6 +165,8 @@ class Txid(Window):
             ),
             on_press=self.close_transaction_info
         )
+        self.close_button._impl.native.connect("enter-notify-event", self.close_button_mouse_enter)
+        self.close_button._impl.native.connect("leave-notify-event", self.close_button_mouse_leave)
 
         self.content = self.main_box
 
@@ -217,6 +223,16 @@ class Txid(Window):
                 
                 await asyncio.sleep(5)
 
+    
+    def close_button_mouse_enter(self, sender, event):
+        self.close_button.style.color = WHITE
+        self.close_button.style.background_color = RED
+
+    def close_button_mouse_leave(self, sender, event):
+        self.close_button.style.color = GRAY
+        self.close_button.style.background_color = TRANSPARENT
+
+
     def close_transaction_info(self, button):
         self.updating_txid = None
         self.transactions.transaction_info_toggle = None
@@ -266,17 +282,27 @@ class Transactions(Box):
         v_adjustment = transactions_table_widgets.get_vadjustment()
         v_adjustment.connect("value-changed", self.on_scroll_table)
         transactions_table_widgets.connect("button-press-event", self.transactions_table_context_event)
-        self.transactions_table_context_menu = Gtk.Menu()
-        copy_address_item = Gtk.MenuItem(label="Copy address")
-        copy_address_item.connect("activate", self.copy_address)
-        copy_txid_item = Gtk.MenuItem(label="Copy transaction ID")
-        copy_txid_item.connect("activate", self.copy_transaction_id)
-        explorer_txid_item = Gtk.MenuItem(label="View txid in explorer")
-        explorer_txid_item.connect("activate", self.open_transaction_in_explorer)
-        self.transactions_table_context_menu.append(copy_address_item)
-        self.transactions_table_context_menu.append(copy_txid_item)
-        self.transactions_table_context_menu.append(explorer_txid_item)
-        self.transactions_table_context_menu.show_all()
+
+        self.transactions_table_context_menu = Menu()
+        self.copy_address_cmd = Command(
+            title="Copy address",
+            action=self.copy_address,
+        )
+        self.copy_txid_cmd = Command(
+            title="Copy transaction ID",
+            action=self.copy_transaction_id
+        )
+        self.explorer_txid_cmd = Command(
+            title="View txid in explorer",
+            action=self.open_transaction_in_explorer
+        )
+        self.transactions_table_context_menu.add_commands(
+            [
+                self.copy_address_cmd,
+                self.copy_txid_cmd,
+                self.explorer_txid_cmd
+            ]
+        )
 
         self.no_transaction = Label(
             text="No Transactions found.",
@@ -288,6 +314,19 @@ class Transactions(Box):
                 padding_top = 40
             )
         )
+        self.set_transactions_context_icons()
+
+
+    def set_transactions_context_icons(self):
+        if self.utils.get_sys_mode():
+            self.copy_address_cmd.icon = "images/copy_w.png"
+            self.copy_txid_cmd.icon = "images/copy_w.png"
+            self.explorer_txid_cmd.icon = "images/explorer_w.png"
+        else:
+            self.copy_address_cmd.icon = "images/copy_b.png"
+            self.copy_txid_cmd.icon = "images/copy_b.png"
+            self.explorer_txid_cmd.icon = "images/explorer_b.png"
+        
 
 
     async def insert_widgets(self, widget):
@@ -315,7 +354,7 @@ class Transactions(Box):
         return False
     
 
-    def copy_address(self, centext):
+    def copy_address(self, action):
         address = self.transactions_table.selection.address
         self.clipboard.copy(address)
         self.main.info_dialog(
@@ -323,7 +362,7 @@ class Transactions(Box):
             message="The address has copied to clipboard.",
         )
 
-    def copy_transaction_id(self, context):
+    def copy_transaction_id(self, action):
         txid = self.transactions_table.selection.txid
         self.clipboard.copy(txid)
         self.main.info_dialog(
@@ -331,7 +370,7 @@ class Transactions(Box):
             message="The transaction ID has copied to clipboard.",
         )
 
-    def open_transaction_in_explorer(self, context):
+    def open_transaction_in_explorer(self, action):
         url = "https://explorer.btcz.rocks/tx/"
         txid = self.transactions_table.selection.txid
         transaction_url = url + txid
@@ -353,8 +392,6 @@ class Transactions(Box):
             self.transaction_info.show()
             self.double_click_handler = False
             self.transaction_info_toggle = True
-        else:
-            self.app.current_window = self.transaction_info
 
 
     def create_rows(self, sorted_transactions):
@@ -444,8 +481,6 @@ class Transactions(Box):
             self.transaction_info = Txid(self, txid)
             self.transaction_info.show()
             self.transaction_info_toggle = True
-        else:
-            self.app.current_window = self.transaction_info
 
 
     def add_transaction(self, index, row):
@@ -496,3 +531,7 @@ class Transactions(Box):
                 }
                 last_index = len(self.transactions_table.data)
                 self.add_transaction(last_index, row)
+    
+
+    def update_transactions_mode(self, widget):
+        self.set_transactions_context_icons()

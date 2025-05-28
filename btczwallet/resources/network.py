@@ -10,7 +10,7 @@ from toga import (
     App, Window, ScrollContainer, Box,
     Label, Divider, TextInput, Button
 )
-from ..framework import Gtk, Gdk, ClipBoard
+from ..framework import Gdk, ClipBoard, Menu, Command
 from toga.constants import COLUMN, ROW, CENTER, BOLD, Direction
 from toga.style.pack import Pack
 from toga.colors import GRAY, BLACK, GREENYELLOW, TRANSPARENT, WHITE, RED
@@ -59,8 +59,9 @@ class AddNode(Window):
         self.add_button = Button(
             text="Add node",
             style=Pack(
+                color = GRAY,
                 font_weight = BOLD,
-                font_size=10,
+                font_size=12,
                 flex = 1,
                 padding = (0,10,0,10)
             ),
@@ -81,7 +82,8 @@ class AddNode(Window):
         self.cancel_button = Button(
             text="Cancel",
             style=Pack(
-                font_size=10,
+                color = GRAY,
+                font_size=12,
                 font_weight = BOLD,
                 alignment = CENTER,
                 padding_bottom = 10,
@@ -335,14 +337,33 @@ class Node(Box):
         self.node_sent._impl.native.connect("button-press-event", self.node_context_event)
         self.node_receive._impl.native.connect("button-press-event", self.node_context_event)
         self.node_subversion._impl.native.connect("button-press-event", self.node_context_event)
-        self.node_context_menu = Gtk.Menu()
-        copy_address_item = Gtk.MenuItem(label="Copy node address")
-        copy_address_item.connect("activate", self.copy_node_address)
-        remove_node_item = Gtk.MenuItem(label="Remove node")
-        remove_node_item.connect("activate", self.remove_node_from_config)
-        self.node_context_menu.append(copy_address_item)
-        self.node_context_menu.append(remove_node_item)
-        self.node_context_menu.show_all()
+
+        self.node_context_menu = Menu()
+        self.copy_address_cmd = Command(
+            title="Copy node address",
+            action=self.copy_node_address
+        )
+        self.remove_node_cmd = Command(
+            title="Remove node",
+            action=self.remove_node_from_config
+        )
+        self.node_context_menu.add_commands(
+            [
+                self.copy_address_cmd,
+                self.remove_node_cmd
+            ]
+        )
+
+        self.set_node_context_icons()
+
+
+    def set_node_context_icons(self):
+        if self.utils.get_sys_mode():
+            self.copy_address_cmd.icon = "images/copy_w.png"
+            self.remove_node_cmd.icon = "images/remove_node_w.png"
+        else:
+            self.copy_address_cmd.icon = "images/copy_b.png"
+            self.remove_node_cmd.icon = "images/remove_node_b.png"
 
 
     def node_context_event(self, widget, event):
@@ -352,7 +373,7 @@ class Node(Box):
         return False
     
 
-    def copy_node_address(self, event):
+    def copy_node_address(self, action):
         self.clipboard.copy(self.address)
         self.peer_window.info_dialog(
             title="Copied",
@@ -360,7 +381,7 @@ class Node(Box):
         )
 
 
-    def remove_node_from_config(self, event):
+    def remove_node_from_config(self, action):
         config_file_path = self.utils.get_config_path()
         with open(config_file_path, 'r') as file:
             lines = file.readlines()
