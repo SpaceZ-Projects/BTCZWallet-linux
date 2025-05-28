@@ -2,6 +2,7 @@
 import asyncio
 import aiohttp
 import tarfile
+import zipfile
 import py7zr
 import os
 import shutil
@@ -35,9 +36,13 @@ class Utils():
         self.units = Units(self.app)
 
 
-    async def get_repo_info(self):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{GITHUB_API_URL}/tags") as response:
+    async def get_repo_info(self, tor_enabled):
+        if tor_enabled:
+            connector = ProxyConnector.from_url('socks5://127.0.0.1:9051')
+        else:
+            connector = None
+        async with aiohttp.ClientSession(connector=connector) as session:
+            async with session.get(f"{GITHUB_API_URL}/tags", timeout=10) as response:
                 if response.status == 200:
                     tags = await response.json()
                     latest_tag = tags[0]['name'] if tags else None
@@ -195,19 +200,23 @@ class Utils():
         if miner == "MiniZ":
             miner_file = "miniZ"
             url = "https://github.com/miniZ-miner/miniZ/releases/download/v2.4e/"
-            zip_file = "miniZ_v2.4e_linux-x64.tar.gz"
+            tar_file = "miniZ_v2.4e_linux-x64.tar.gz"
         elif miner == "Gminer":
             miner_file = "miner"
             url = "https://github.com/develsoftware/GMinerRelease/releases/download/3.44/"
-            zip_file = "gminer_3_44_linux64.tar.xz"
+            tar_file = "gminer_3_44_linux64.tar.xz"
+        elif miner == "lolMiner":
+            miner_file = "lolMiner"
+            url = "https://github.com/Lolliedieb/lolMiner-releases/releases/download/1.95/"
+            tar_file = "lolMiner_v1.95_Lin64.tar.gz"
 
         miner_dir = os.path.join(self.app_data, miner_folder)
         if not os.path.exists(miner_dir):
             os.makedirs(miner_dir)
         miner_path = os.path.join(miner_dir, miner_file)
         if os.path.exists(miner_path):
-            return miner_path, url, zip_file
-        return None, url, zip_file
+            return miner_path, url, tar_file
+        return None, url, tar_file
     
 
     async def fetch_tor_files(self, label, progress_bar):
@@ -453,14 +462,30 @@ class Utils():
     async def extract_miner(self, miner_selection, setup_miner_box, progress_bar, destination, miner_folder, miner_dir):
         if miner_folder == "MiniZ":
             miner_name = "miniZ"
-            tar_extension = 'r:gz'
+            extension = 'r:gz'
         elif miner_folder == "Gminer":
             miner_name = "miner"
-            tar_extension = 'r:xz'
+            extension = 'r:xz'
+        elif miner_folder == "lolMiner":
+            miner_name = "lolMiner"
+            extension = 'r:gz'
+
         def extract_filter(tarinfo, fileobj):
             return tarinfo
-        with tarfile.open(destination, tar_extension) as tar_ref:
+        
+        with tarfile.open(destination, extension) as tar_ref:
             tar_ref.extractall(miner_dir, filter=extract_filter)
+        
+        if miner_folder == "lolMiner":
+            subdirs = [os.path.join(miner_dir, d) for d in os.listdir(miner_dir) if os.path.isdir(os.path.join(miner_dir, d))]
+            if len(subdirs) == 1:
+                subdir = subdirs[0]
+                for file_name in os.listdir(subdir):
+                    src_path = os.path.join(subdir, file_name)
+                    dest_path = os.path.join(miner_dir, file_name)
+                    shutil.move(src_path, dest_path)
+                os.rmdir(subdir)
+
         for root, dirs, files in os.walk(miner_dir):
             for file_name in files:
                 if file_name != miner_name:
