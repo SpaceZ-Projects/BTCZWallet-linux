@@ -4,14 +4,16 @@ import json
 import psutil
 import re
 import os
+import time
 import aiohttp
 from aiohttp_socks import ProxyConnector, ProxyConnectionError
 
 from toga import (
     App, Box, Label, Selection, TextInput,
     ProgressBar, Window, ScrollContainer, Button,
-    ImageView, Switch
+    ImageView, Table, Switch
 )
+from ..framework import Gtk, Gdk
 from toga.style.pack import Pack
 from toga.constants import COLUMN, CENTER, BOLD, ROW
 from toga.colors import (
@@ -22,7 +24,162 @@ from .utils import Utils
 from .units import Units
 from .client import Client
 from .settings import Settings
+from .storage import Storage
 
+
+class AddressesList(Window):
+    def __init__(self, mining_page:Box):
+        super().__init__(
+            size= (650,300),
+            resizable=False,
+            closable=False
+        )
+
+        self.mining_page = mining_page
+
+        self.utils = Utils(self.app)
+        self.commands = Client(self.app)
+        self.storage = Storage(self.app)
+
+        self.title = "Double click to confirm address"
+        position_center = self.utils.windows_screen_center(self.size)
+        self.position = position_center
+
+        self._impl.native.set_keep_above(True)
+        self._impl.native.set_modal(True)
+
+        self.last_click_time = 0
+        self.double_click_threshold = 0.5
+
+        self.main_box = Box(
+            style=Pack(
+                direction = COLUMN,
+                flex = 1,
+                alignment = CENTER
+            )
+        )
+
+        self.addresses_table = Table(
+            headings=["Addresses"],
+            accessors={"addresses"},
+            style=Pack(
+                flex = 1,
+                font_weight = BOLD
+            )
+        )
+        addresses_table_widgets = self.addresses_table._impl.native.get_child()
+        addresses_table_widgets.connect("button-press-event", self.addresses_table_double_click)
+
+        self.cancel_button = Button(
+            text="Cancel",
+            style=Pack(
+                color = GRAY,
+                font_weight = BOLD,
+                font_size = 10,
+                alignment = CENTER,
+                padding = (5,0,5,0)
+            ),
+            on_press=self.close_addresses_list
+        )
+        self.cancel_button._impl.native.connect("enter-notify-event", self.cancel_button_mouse_enter)
+        self.cancel_button._impl.native.connect("leave-notify-event", self.cancel_button_mouse_leave)
+
+        self.buttons_box = Box(
+            style=Pack(
+                direction = ROW,
+                alignment =CENTER
+            )
+        )
+
+        self.content = self.main_box
+
+        self.main_box.add(
+            self.addresses_table,
+            self.buttons_box
+        )
+        self.buttons_box.add(
+            self.cancel_button
+        )
+        self.app.add_background_task(self.display_addresses)
+
+
+    async def display_addresses(self, widget):
+        transparent_addresses = await self.get_transparent_addresses()
+        for address in transparent_addresses:
+            self.addresses_table.data.append(address)
+        private_addresses = await self.get_private_addresses()
+        if private_addresses:
+            for address in private_addresses:
+                self.addresses_table.data.append(address)
+
+        addresses_table_widgets = self.addresses_table._impl.native.get_child()
+        selection = addresses_table_widgets.get_selection()
+        path = Gtk.TreePath(0)
+        selection.select_path(path)
+
+
+    def addresses_table_double_click(self, widget, event):
+        if event.button == Gdk.BUTTON_PRIMARY:
+            current_time = time.time()
+            if current_time - self.last_click_time <= self.double_click_threshold and not self.double_click_handler:
+                self.confirm_selection(widget, event)
+                self.double_click_handler = True
+            else:
+                self.double_click_handler = False
+            self.last_click_time = current_time
+
+    
+    def confirm_selection(self, widget, event):
+        row = self.addresses_table.selection
+        self.mining_page.selected_address = row.addresses
+        if len(row.addresses) >= 36:
+            address = f"{row.addresses[:35]}..."
+        else:
+            address = row.addresses
+        self.mining_page.address_selection.text = address
+        self.mining_page.address_selection._impl.native.set_tooltip_text(row.addresses)
+        self.app.add_background_task(self.mining_page.display_address_balance)
+        self.close()
+
+
+    async def get_transparent_addresses(self):
+        addresses_data,_ = await self.commands.ListAddresses()
+        if addresses_data:
+            addresses_data = json.loads(addresses_data)
+        else:
+            addresses_data = []
+        if addresses_data is not None:
+            address_items = [(address_info, address_info) for address_info in addresses_data]
+
+        return address_items
+    
+
+    async def get_private_addresses(self):
+        addresses_data,_ = await self.commands.z_listAddresses()
+        addresses_data = json.loads(addresses_data)
+        if addresses_data:
+            message_address = self.storage.get_identity("address")
+            if message_address:
+                address_items = {address_info for address_info in addresses_data if address_info != message_address[0]}
+            else:
+                address_items = {address_info for address_info in addresses_data}
+        else:
+            address_items = []
+        return address_items
+    
+
+    def cancel_button_mouse_enter(self, sender, event):
+        self.cancel_button.style.color = BLACK
+        self.cancel_button.style.background_color = RED
+
+
+    def cancel_button_mouse_leave(self, sender, event):
+        self.cancel_button.style.color = GRAY
+        self.cancel_button.style.background_color = TRANSPARENT
+    
+
+    def close_addresses_list(self, button):
+        self.close()
 
 
 class Mining(Box):
