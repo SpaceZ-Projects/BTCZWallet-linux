@@ -2,12 +2,13 @@
 import os
 import threading
 import platform
+import time
 
 from typing import Optional, Callable
 
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, Gio
+from gi.repository import Gtk, Gdk, Gio, GdkPixbuf
 
 
 def get_app_path():
@@ -65,6 +66,24 @@ class Toolbar(Gtk.MenuBar):
 
 
 
+class Menu(Gtk.Menu):
+    def __init__(self):
+        super().__init__()
+        self.items = []
+
+    def add_commands(self, commands):
+        if not isinstance(commands, list):
+            raise ValueError("The 'commands' parameter must be a list of Gtk.MenuItem objects.")
+
+        for command in commands:
+            if not isinstance(command, Gtk.MenuItem):
+                raise TypeError("All elements must be Gtk.MenuItem instances.")
+            self.items.append(command)
+            self.append(command)
+        self.show_all()
+
+
+
 class Command(Gtk.MenuItem):
     def __init__(
         self,
@@ -73,7 +92,8 @@ class Command(Gtk.MenuItem):
         sub_commands=None,
         tooltip:str = None,
         shortcut: str = None,
-        accel_group: Gtk.AccelGroup = None
+        accel_group: Gtk.AccelGroup = None,
+        icon: str = None
     ):
         super().__init__()
 
@@ -85,6 +105,10 @@ class Command(Gtk.MenuItem):
         self._tooltip = tooltip
         self._shortcut = shortcut
         self._accel_group = accel_group
+        self._icon = icon
+
+        self.app_path = get_app_path()
+        self._build_item()
 
         self.set_label(self._title)
 
@@ -107,7 +131,8 @@ class Command(Gtk.MenuItem):
                 "activate", self._accel_group,
                 key, mod, Gtk.AccelFlags.VISIBLE
             )
-
+        
+        
     @property
     def action(self):
         return self._action
@@ -121,6 +146,61 @@ class Command(Gtk.MenuItem):
         self._action = new_action
         if self._action:
             self._handler_id = self.connect("activate", self._action)
+
+    
+    @property
+    def icon(self):
+        return self._icon
+
+    @icon.setter
+    def icon(self, value):
+        self._icon = value
+        self._build_item()
+
+    
+    def _build_item(self):
+        child = self.get_child()
+        if child:
+            self.remove(child)
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        if self._icon:
+            try:
+                icon_path = os.path.join(self.app_path, self._icon)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon_path, 16, 16)
+                image = Gtk.Image.new_from_pixbuf(pixbuf)
+                box.pack_start(image, False, False, 0)
+            except Exception as e:
+                print(f"Failed to load icon: {e}")
+
+        label = Gtk.Label(label=self._title)
+        label.set_xalign(0.0)
+        box.pack_start(label, True, True, 0)
+        if self._shortcut:
+            friendly_shortcut = self.format_shortcut(self._shortcut)
+            shortcut_label = Gtk.Label(label=friendly_shortcut)
+            shortcut_label.set_xalign(1.0)
+            box.pack_end(shortcut_label, False, False, 0)
+
+        box.show_all()
+        self.add(box)
+
+    
+    def format_shortcut(self, shortcut: str) -> str:
+        replacements = {
+            '<Control>': 'Ctrl+',
+            '<Ctrl>': 'Ctrl+',
+            '<Shift>': 'Shift+',
+            '<Alt>': 'Alt+',
+            '<Super>': 'Super+',
+        }
+
+        for gtk_key, readable in replacements.items():
+            shortcut = shortcut.replace(gtk_key, readable)
+
+        # Remove leftover angle brackets
+        shortcut = shortcut.replace('<', '').replace('>', '')
+
+        return shortcut
 
 
 
@@ -188,13 +268,18 @@ class StatusIconGtk:
         self,
         icon: str,
         on_right_click: Optional[Callable] = None,
-        on_left_click: Optional[Callable] = None
+        on_left_click: Optional[Callable] = None,
+        on_double_click: Optional[Callable] = None
     ):
         self.app_path = get_app_path()
         self.icon = os.path.join(self.app_path, icon)
 
         self.on_right_click = on_right_click
         self.on_left_click = on_left_click
+        self.on_double_click = on_double_click
+
+        self.last_click_time = 0
+        self.double_click_threshold = 0.5
 
         self.status_icon = Gtk.StatusIcon()
         self.status_icon.set_from_file(self.icon)
@@ -204,11 +289,17 @@ class StatusIconGtk:
 
     def on_right_click_event(self, status_icon, button, time):
         if self.on_right_click:
-            self.on_right_click(button, time)
+            self.on_right_click()
 
     def on_left_click_event(self, status_icon):
-        if self.on_left_click:
-            self.on_left_click()
+        now = time.time()
+        if (now - self.last_click_time) <= self.double_click_threshold:
+            if self.on_double_click:
+                self.on_double_click()
+        else:
+            if self.on_left_click:
+                self.on_left_click()
+        self.last_click_time = now
 
     def show(self):
         self.status_icon.set_visible(True)

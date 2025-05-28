@@ -8,6 +8,7 @@ from toga.style.pack import Pack
 from toga.constants import TOP, ROW
 
 from .client import Client
+from .utils import Utils
 
 
 class AppToolbar(Box):
@@ -24,6 +25,7 @@ class AppToolbar(Box):
         self.home_page = home_page
         self.mining_page = mining_page
         self.commands = Client(self.app)
+        self.utils = Utils(self.app)
 
         self.toolbar = Toolbar()
 
@@ -40,14 +42,16 @@ class AppToolbar(Box):
             action=self.exit_app,
             tooltip="Exit the application and keep node running in background",
             shortcut="<Alt>F4",
-            accel_group=accel_group
+            accel_group=accel_group,
+            icon="images/exit.png"
         )
         self.stop_exit_cmd = Command(
             title="Stop node",
             action=self.stop_node_exit,
             tooltip="Stop the node and exit the application",
             shortcut="<Alt>Q",
-            accel_group=accel_group
+            accel_group=accel_group,
+            icon="images/stop.png"
         )
 
         self.app_menu = Command(
@@ -196,8 +200,53 @@ class AppToolbar(Box):
                 self.help_menu
             ]
         )
-
         self._impl.native.pack_start(self.toolbar, True, True, 0)
+        self.app.add_background_task(self.set_toolbar_icons)
+
+
+    def set_toolbar_icons(self, widget):
+        if self.utils.get_sys_mode():
+            self.app_menu.icon = "images/app_w.png"
+            self.about_cmd.icon = "images/about_w.png"
+            self.settings_menu.icon = "images/settings_w.png"
+            self.currency_cmd.icon = "images/currency_w.png"
+            self.network_menu.icon = "images/network_w.png"
+            self.peer_info_cmd.icon = "images/peer_w.png"
+            self.add_node_cmd.icon = "images/add_node_w.png"
+            self.wallet_menu.icon = "images/wallet_w.png"
+            self.generate_address_cmd.icon = "images/new_addr_w.png"
+            self.generate_t_cmd.icon = "images/transparent_w.png"
+            self.generate_z_cmd.icon = "images/private_w.png"
+            self.import_key_cmd.icon = "images/importkey_w.png"
+            self.export_wallet_cmd.icon = "images/export_w.png"
+            self.import_wallet_cmd.icon = "images/import_w.png"
+            self.messages_menu.icon = "images/messages_conf_w.png"
+            self.edit_username_cmd.icon = "images/edit_username_w.png"
+            self.backup_messages_cmd.icon = "images/backup_w.png"
+            self.help_menu.icon = "images/help_w.png"
+            self.check_update_cmd.icon = "images/update_w.png"
+            self.join_us_cmd.icon = "images/discord_w.png"
+        else:
+            self.app_menu.icon = "images/app_b.png"
+            self.about_cmd.icon = "images/about_b.png"
+            self.settings_menu.icon = "images/settings_b.png"
+            self.currency_cmd.icon = "images/currency_b.png"
+            self.network_menu.icon = "images/network_b.png"
+            self.peer_info_cmd.icon = "images/peer_b.png"
+            self.add_node_cmd.icon = "images/add_node_b.png"
+            self.wallet_menu.icon = "images/wallet_b.png"
+            self.generate_address_cmd.icon = "images/new_addr_b.png"
+            self.generate_t_cmd.icon = "images/transparent_b.png"
+            self.generate_z_cmd.icon = "images/private_b.png"
+            self.import_key_cmd.icon = "images/importkey_b.png"
+            self.export_wallet_cmd.icon = "images/export_b.png"
+            self.import_wallet_cmd.icon = "images/import_b.png"
+            self.messages_menu.icon = "images/messages_conf_b.png"
+            self.edit_username_cmd.icon = "images/edit_username_b.png"
+            self.backup_messages_cmd.icon = "images/backup_b.png"
+            self.help_menu.icon = "images/help_b.png"
+            self.check_update_cmd.icon = "images/update_b.png"
+            self.join_us_cmd.icon = "images/discord_b.png"
 
 
     def display_about_dialog(self, action):
