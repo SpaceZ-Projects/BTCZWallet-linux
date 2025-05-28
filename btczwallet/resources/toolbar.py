@@ -80,6 +80,11 @@ class AppToolbar(Box):
             tooltip="Enable/Disable the messages notifications"
         )
 
+        self.minimize_cmd = CheckCommand(
+            title="Minimize to tray",
+            tooltip="Enable/Disable minimizing the application to the system tray on close"
+        )
+
         self.startup_cmd = CheckCommand(
             title="Run on startup",
             tooltip="Enable/Disable app startup on boot"
@@ -91,6 +96,7 @@ class AppToolbar(Box):
                 self.currency_cmd,
                 self.notification_txs_cmd,
                 self.notification_messages_cmd,
+                self.minimize_cmd,
                 self.startup_cmd
             ]
         )

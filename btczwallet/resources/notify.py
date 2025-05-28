@@ -2,7 +2,7 @@
 import psutil
 
 from toga import App, Window
-from ..framework import StatusIconGtk, Gtk, Command
+from ..framework import StatusIconGtk, Command, Menu
 
 from .client import Client
 
@@ -11,8 +11,9 @@ class Notify(StatusIconGtk):
     def __init__(self, app:App, main:Window, home_page, mining_page):
         super().__init__(
             icon = "images/BitcoinZ-32.png",
-            on_right_click=self.notify_on_click,
-            on_left_click=self.show_menu
+            on_right_click=self._on_right_click,
+            on_left_click=self._on_left_click,
+            on_double_click=self._on_double_click
         )
 
         self.app = app
@@ -22,30 +23,42 @@ class Notify(StatusIconGtk):
 
         self.commands = Client(self.app)
 
-    def notify_on_click(self, button, time):
-        menu = Gtk.Menu()
+        self.menu = Menu()
         
         stop_exit_cmd = Command(
             title="Stop node",
-            action=self.stop_node_exit
+            action=self.stop_node_exit,
+            icon="images/stop.png"
         )
 
         exit_cmd = Command(
             title="Exit",
-            action=self.exit_app
+            action=self.exit_app,
+            icon="images/exit.png"
         )
 
-        menu.append(stop_exit_cmd)
-        menu.append(exit_cmd)
-        menu.show_all()
+        self.menu.add_commands(
+            [
+                stop_exit_cmd,
+                exit_cmd
+            ]
+        )
 
-        menu.popup(None, None, None, None, button, time)
+
+    def _on_right_click(self):
+        self.menu.popup_at_pointer(None)
+
+
+    def _on_left_click(self):
+        if not self.main._is_hidden:
+            self.main._impl.native.present()
 
     
-    def show_menu(self):
-        if self.main.import_key_toggle:
-            return
-        self.app.current_window = self.main
+    def _on_double_click(self):
+        if self.main._is_hidden:
+            self.main.position = self.main.position
+            self.main.show()
+            self.main._is_hidden = None
 
 
     def exit_app(self, action):

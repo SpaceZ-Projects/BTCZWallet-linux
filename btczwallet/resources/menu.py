@@ -47,12 +47,12 @@ class Menu(Window):
         self.size = (920,640)
         position_center = self.utils.windows_screen_center(self.size)
         self.position = position_center
-        self.on_close = self.exit_app
+        self.on_close = self.on_close_menu
 
         Gtk.Settings.get_default().connect("notify::gtk-theme-name", self.on_change_mode)
         
+        self._is_hidden = None
         self.import_key_toggle = None
-        self.edit_user_toggle = None
         self.peer_toggle = None
 
         self.main_box = Box(
@@ -207,6 +207,10 @@ class Menu(Window):
             self.toolbar.notification_messages_cmd.active = True
         else:
             self.toolbar.notification_messages_cmd.active = self.settings.notification_messages()
+        if self.settings.minimize_to_tray():
+            self.toolbar.minimize_cmd.active = True
+        else:
+            self.toolbar.minimize_cmd.active = self.settings.minimize_to_tray()
         if self.settings.startup():
             self.toolbar.startup_cmd.active = True
         else:
@@ -215,6 +219,7 @@ class Menu(Window):
         self.toolbar.currency_cmd.action = self.show_currencies_list
         self.toolbar.notification_txs_cmd.on_toggled = self.update_notifications_txs
         self.toolbar.notification_messages_cmd.on_toggled = self.update_notifications_messages
+        self.toolbar.minimize_cmd.on_toggled = self.update_minimize_to_tray
         self.toolbar.startup_cmd.on_toggled = self.update_app_startup
         self.toolbar.peer_info_cmd.action = self.show_peer_info
         self.toolbar.add_node_cmd.action = self.show_add_node
@@ -261,6 +266,13 @@ class Menu(Window):
             self.settings.update_settings("notifications_messages", True)
 
 
+    def update_minimize_to_tray(self, action):
+        if self.settings.minimize_to_tray():
+            self.settings.update_settings("minimize", False)
+        else:
+            self.settings.update_settings("minimize", True)
+
+
     def update_app_startup(self, action):
         if self.settings.startup():
             reg = self.utils.remove_from_startup()
@@ -281,26 +293,42 @@ class Menu(Window):
 
 
     async def generate_transparent_address(self, widget):
+        async def on_result(widget, result):
+            if result is None:
+                if self.receive_page.transparent_toggle:
+                    self.insert_new_address(new_address)
+                if self.send_page.transparent_toggle:
+                    await self.send_page.reload_addresses()
         new_address,_ = await self.commands.getNewAddress()
         if new_address:
-            await self.receive_page.update_addresses()
-            await self.send_page.update_addresses()
-            await self.mining_page.update_addresses()
             self.info_dialog(
                 title="New Address",
-                message=f"Generated address : {new_address}"
+                message=f"Generated address : {new_address}",
+                on_result=on_result
             )
 
 
     async def generate_private_address(self, widget):
+        async def on_result(widget, result):
+            if result is None:
+                if self.receive_page.private_toggle:
+                    self.insert_new_address(new_address)
+                if self.send_page.private_toggle:
+                    await self.send_page.reload_addresses()
         new_address,_ = await self.commands.z_getNewAddress()
         if new_address:
-            await self.receive_page.update_addresses()
-            await self.send_page.update_addresses()
             self.info_dialog(
                 title="New Address",
-                message=f"Generated address : {new_address}"
+                message=f"Generated address : {new_address}",
+                on_result=on_result
             )
+
+
+    def insert_new_address(self, address):
+        self.receive_page.addresses_table.data.insert(
+            index=0,
+            data=address
+        )
 
 
     def check_app_version(self, action):
@@ -311,7 +339,8 @@ class Menu(Window):
         def on_result(widget, result):
             if result is True:
                 webbrowser.open(self.git_link)
-        git_version, link = await self.utils.get_repo_info()
+        tor_enabled = self.settings.tor_network()
+        git_version, link = await self.utils.get_repo_info(tor_enabled)
         if git_version:
             self.git_link = link
             current_version = self.app.version
@@ -387,22 +416,12 @@ class Menu(Window):
 
 
     def edit_messages_username(self, action):
-        if not self.edit_user_toggle:
-            data = self.storage.is_exists()
-            if data:
-                username = self.storage.get_identity("username")
-                if username:
-                    self.edit_window = EditUser(username[0], self)
-                    self.edit_window.close_button.on_press = self.close_edit_username
-                    self.edit_window.show()
-                    self.edit_user_toggle = True
-        else:
-            self.app.current_window = self.edit_window
-
-    
-    def close_edit_username(self, button):
-        self.edit_user_toggle = None
-        self.edit_window.close()
+        data = self.storage.is_exists()
+        if data:
+            username = self.storage.get_identity("username")
+            if username:
+                self.edit_window = EditUser(username[0], self)
+                self.edit_window.show()
 
 
     def backup_messages(self, action):
@@ -533,22 +552,19 @@ class Menu(Window):
 
 
     def on_change_mode(self, settings, param_spec):
+        self.app.add_background_task(self.toolbar.set_toolbar_icons)
         self.app.add_background_task(self.wallet.update_wallet_mode)
         self.app.add_background_task(self.home_page.update_home_mode)
+        self.app.add_background_task(self.transactions_page.update_transactions_mode)
         self.app.add_background_task(self.send_page.update_send_mode)
+        self.app.add_background_task(self.receive_page.update_receive_mode)
         self.app.add_background_task(self.messages_page.update_messages_mode)
         self.app.add_background_task(self.mining_page.update_mining_mode)
 
 
-    def exit_app(self, widget):
-        def on_result(widget, result):
-            if result is True:
-                self.home_page.clear_cache()
-                self.app.exit()
-        if self.mining_page.mining_status:
+    def on_close_menu(self, widget):
+        if self.settings.minimize_to_tray():
+            self.hide()
+            self._is_hidden = True
             return
-        self.question_dialog(
-            title="Exit app",
-            message="Are you sure you want to exit the application ?",
-            on_result=on_result
-        )
+        self.toolbar.exit_app(None)

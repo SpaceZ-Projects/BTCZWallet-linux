@@ -73,6 +73,15 @@ class Settings():
                 return settings['symbol']
             
 
+    def minimize_to_tray(self):
+        with open(self.settings_path, 'r') as f:
+            settings = json.load(f)
+            if 'minimize' not in settings:
+                return False
+            else:
+                return settings['minimize']
+            
+
     def tor_network(self):
         with open(self.settings_path, 'r') as f:
             settings = json.load(f)
