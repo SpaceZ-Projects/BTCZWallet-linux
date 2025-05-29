@@ -632,13 +632,14 @@ class Mining(Box):
             return
         miner_path, url, zip_file = self.utils.get_miner_path(self.selected_miner)
         if not miner_path:
+            tor_enabled = self.settings.tor_network()
             self.miner_selection.enabled = False
             self.setup_miner_box.add(
                 self.progress_bar
             )
             self.progress_bar.value = 0
             await self.utils.fetch_miner(
-                self.miner_selection, self.setup_miner_box, self.progress_bar, self.selected_miner, zip_file, url, self.tor_enabled
+                self.miner_selection, self.setup_miner_box, self.progress_bar, self.selected_miner, zip_file, url, tor_enabled
             )
 
     
@@ -734,6 +735,7 @@ class Mining(Box):
     def prepare_mining(self):
         miner_path,_,_ = self.utils.get_miner_path(self.selected_miner)
         if miner_path:
+            tor_enabled = self.settings.tor_network()
             if self.selected_miner == "MiniZ":
 
                 log_file = os.path.join(self.app.paths.data, self.selected_miner,'miniZ.log')
@@ -748,7 +750,7 @@ class Mining(Box):
                     self.miner_command += ' --pass c=BTCZ,mc=BTCZ --pers BitcoinZ'
                 else:
                     self.miner_command += ' --pass x --par 144,5 --pers BitcoinZ'
-                if self.tor_enabled:
+                if tor_enabled:
                     self.miner_command += ' --socks 127.0.0.1:9051'
 
             elif self.selected_miner == "Gminer":
@@ -764,7 +766,7 @@ class Mining(Box):
                 else:
                     self.miner_command += f'.{self.worker_name} --pass x --algo 144_5 --pers BitcoinZ'
                 self.miner_command += f' --port {self.pool_port}'
-                if self.tor_enabled:
+                if tor_enabled:
                     self.miner_command += ' --proxy 127.0.0.1:9051'
 
             elif self.selected_miner == "lolMiner":
@@ -780,7 +782,7 @@ class Mining(Box):
                     self.miner_command += f' --pass c=BTCZ,mc=BTCZ,ID={self.worker_name} --pers BitcoinZ --algo EQUI144_5'
                 else:
                     self.miner_command += f'.{self.worker_name} --pass x --pers BitcoinZ --algo EQUI144_5'
-                if self.tor_enabled:
+                if tor_enabled:
                     self.miner_command += ' --socks5 127.0.0.1:9051'
 
             self.disable_mining_inputs()
